@@ -1,0 +1,293 @@
+########################################################################################################################
+# Файл настроек программы src-rdv-generator
+########################################################################################################################
+
+# Кодировку файла не менять  
+encoding: 'utf-8'
+
+# Ссылки/Якоря #########################################################################################################
+# Параметры проекта задавать здесь!
+# Во 2-ой строке отступ обязателен !!!
+
+# Автор проекта.
+anchor_author: &author
+  "Alexey Blagov"
+# Команда проекта.
+anchor_team: &team
+  "zi21"
+# СУБО - Слой устойчивых бизнес операций.
+anchor_subo: &subo
+  "1420_2"
+# Полное название СУБО.
+anchor_subo_name: &subo_name
+  "Редактируем здесь"
+# Предметная область.
+anchor_area: &area
+  "application"
+########################################################################################################################
+
+# Список потоков в виде шаблонов regular expression,
+# которые (потоки) будут обрабатываться (браться из EXCEL).
+# Если имя потока не соответствует ни одному из шаблонов, то файлы потока создаваться не будут.
+# ".+" - все потоки
+# Если задается полное имя потока, то в начале ставится знак "^", а в конце - "$"
+# Иначе поиск будет вестись по совпадению любой части имени с шаблоном
+wf_templates_list:
+#  - ".+"
+  - "^wf_app_savc_dapp_rdv_mart_payment_savcsa_rtldpstmntransfernstrctn_savc$"
+  - "^wf_app_savc_dapp_rdv_savcsa_depositparticipant$"
+#  - "^wf_app_mssa_dapp_rdv_mart_product_additional_service$"
+#  - "^wf_app_mssa_dapp_rdv_mart_application_product_insurance$"
+
+########################################################################################################################
+
+delta_mode: "new"
+data_capture_mode: "increment"
+
+# Ссылка на каталог с шаблонами.
+# По умолчанию шаблоны берутся из каталога templates, который находится "рядом" с main.py
+templates: "C:\\GitHub\\ceh-rdv-generator-II\\templates.DAPP"
+
+# Программа для отображения log-файла. Работу на linux не проверял.
+# Первая строка содержит имя (полный путь) вызываемого редактора.
+# Следующие строки содержат параметры для вызываемого редактора.
+log_viewer:
+  - "C:\\Program Files\\Notepad++\\notepad++.exe"
+  - "-ro"
+  - "{log_file}"
+
+# Файл журнала. Если не задавать "полный" путь, то файл будет сформирован в каталоге из параметра out_path
+log_file: "generator.log"
+
+# Каталог, в котором будут создаваться подкаталоги потоков
+# Если задан не "абсолютный" путь, то каталог создается "рядом" с файлом main.py
+# Если задать пустое значение, то каталог потоков будет назван AFlows
+out_path: "C:\\Projects\\FD5-4290\\rdv"
+
+# Имя файла EXCEL с маппингом потоков дял отображения в диалог выбора.
+# В диалоге можно выбрать любой другой файл маппинга для обработки.
+excel_file: "C:\\Projects\\FD5-4290\\rdv\\Маппинг_ЦЕХ_RDV_SAVC_v7.0.xlsx"
+
+########################################################################################################################
+
+author: *author
+team: *team
+subo: *subo
+subo_name: *subo_name
+area: *area
+
+# Набор строк для секции metadata.tags в файлах потока cf/wf
+tags:
+  - team: *team
+  - area: *area
+  - subo: *subo
+  - rls:000
+
+# Набор строк для секции tags в файлах описания ресурсов *.json
+# Можно изменить порядок строк или/и добавить свою строку без переменных
+resource_tags:
+  - author: *author
+  - team: *team
+  - subo: *subo
+  - area: *area
+
+### Шаблоны для проверки имен/названий #################################################################################
+
+# Шаблон Кода источника
+src_cd_regexp: "^='([A-Z_]+)'$"
+# Шаблон названия поля в таблице-источнике
+src_attr_name_regexp: "^[a-zA-Z][a-zA-Z0-9_\\$]*$"
+# Шаблон названия поля в целевой таблице
+tgt_attr_name_regexp: "^[a-zA-Z][a-zA-Z0-9_]{0,61}$"
+# Шаблон названия таблицы-источника
+src_table_name_regexp: "^[a-zA-Z][a-zA-Z0-9_]*\\.[a-zA-Z][a-zA-Z0-9_]*$"
+# Шаблон названия целевой-таблицы
+tgt_table_name_regexp: "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+# Шаблон названия БК-схемы
+bk_schema_regexp: "^[a-zA-Z][a-zA-Z0-9_-]*$"
+# Название таблицы из колонки Attr:BK_Object
+bk_object_regexp: "^([a-z][a-z0-9_]*)(\\.[a-z][a-z0-9_]*)(\\.[a-z][a-z0-9_]*){0,1}$"
+
+########################################################################################################################
+
+# Настройка списков полей
+# Раздел должен присутствовать!!!
+setting_up_field_lists:
+  # Список названий полей, которые НЕ будут использоваться для формирования hash
+  # По поводу src_cd нет однозначного понимания ...
+  # deleted_flg используется для формирования hash
+  ignore_hash_set:
+    - effective_date
+    - effective_dttm
+    - effective_from_dttm
+    - effective_to_dttm
+    - hash_diff
+    - src_cd
+    - version_id
+#    - deleted_flg
+    - valid_flg
+    - invalid_id
+    - processed_dt
+    - hdp_processed_dttm
+    - processed_dttm
+
+  # Список полей, которые НЕ включаются в опцию distributed_by и в multi_fields
+  ignore_distributed_src:
+    - effective_date
+    - effective_dttm
+    - effective_from_dttm
+    - effective_to_dttm
+    - hash_diff
+    - src_cd
+    - version_id
+    - deleted_flg
+    - valid_flg
+    - invalid_id
+    - processed_dt
+    - hdp_processed_dttm
+
+  # Список полей целевой таблицы, которые НЕ будут добавлены в секцию field_map шаблона wf.yaml.
+  # Исключение полей из списка идет ДО добавления полей из секции add_field_map_ctx_list.
+  # Не включать поля, которые присутствуют в теге tgt_history_field (для ODS).
+  ignore_field_map_ctx_list:
+    - valid_flg
+    - src_cd
+    - hash_diff
+    - invalid_id
+    - version_id
+    - deleted_flg
+    - valid_flg
+
+  # Список полей с описанием, которые БУДУТ добавлены в секцию field_map шаблона wf.yaml.
+  # Добавление идет после исключения (список ignore_field_map_ctx_list).
+  # Если поле уже присутствует в списке полей, то будет инициирована ошибка.
+  # Поле добавляется "как есть".
+  # Ниже приведен, как можно добавить поле deleted_flg, если его описания нет в EXCEL.
+  # Следует использовать если
+  #  - нет возможности/желания править EXCEL
+  #  - описать алгоритм формирования поля в EXCEL затруднительно
+  add_field_map_ctx_list:
+#    deleted_flg:
+#      type: sql_expression
+#      value: decode(upper(op_type), 'DELETE', true, false)
+#      field_type: BOOLEAN
+
+  # Определение поля даты в таблице-источнике по которому будет выполняться фильтрация новых записей.
+  # Используется в шаблоне wf.yaml.
+  processed_dt: commit_ts
+  # Отсечение даты: microseconds,milliseconds,second,minute,hour,day,week,month,quarter,year,decade,,centurymillennium
+  processed_dt_conversion: second
+ 
+  # Поле "историчности" в целевой таблице (поле history_field в шаблоне mart.yaml)	 
+  # Применять с осторожностью. Алгоритм обработки этого параметра фреймом мне неизвестен.
+  # tgt_history_field: effective_dttm
+
+# Настройки состава/типа/названия полей
+field_type_list:
+  # Список обязательных предопределенных "связок" поле+тип поля для целевой таблицы.
+  # Поле должно присутствовать и его тип должен соответствовать типу заданному списке
+  tgt_attr_predefined_datatype: {
+    #effective_from_dttm: ["timestamp", "null"],
+    #effective_to_dttm: ["timestamp", "null"],
+    #effective_from_date: ["date", "null"],
+    #effective_to_date: ["date", "null"],
+    effective_dttm: ["timestamp", "not null"],
+    hash_diff: [ "char(32)", "not null" ],
+    src_cd: [ "text", "not null" ],
+    version_id: [ "bigint", "not null" ],
+    deleted_flg: [ "boolean", "not null" ],
+    valid_flg: [ "boolean", "not null" ],
+    invalid_id: ["bigint", "not null"]
+  }
+
+  # Список предопределенных "связок" поле - тип поля для источника.
+  # Используется для контроля заполнения EXCEL.
+  # В разных источниках могут быть разные поля.
+  # Поля должны присутствовать!
+  src_attr_predefined_datatype: {
+    #changeid: ["string"],
+    #changetimestamp: ["string"],
+    #changetype: ["string"],
+    #hdp_processed_dttm: ["timestamp"],
+    #processed_dt: ["timestamp"], 
+    commit_ts: ["timestamp"], 
+  }
+
+  # Список возможных значений колонки "Src_attr_datatype"
+  # Фрейм поддерживает ограниченное количество типов.
+  src_attr_datatype: ['text', 'string', 'timestamp', 'smallint', 'bigint', 'decimal', 'integer']
+
+  # Список возможных значений колонки "Tgt_attr_datatype"
+  # Фрейм поддерживает ограниченное количество типов.
+  tgt_attr_datatype: ['text', 'timestamp', 'char(32)', 'smallint', 'bigint', 'boolean', 'integer', 'decimal', 'date']
+
+  # Список "корреспонденций" типов данных источника и целевой таблицы
+  # Если "пара" типа данных источника и целевой таблицы (из EXCEL) не найдена в списке, то выдается
+  # "мягкое" предупреждение
+  corresp_datatype : {
+            'text': ['text'],
+            'string': ['text'],
+            'timestamp': ['timestamp'],
+            'smallint': ['smallint'],
+            'bigint': ['bigint'],
+            'decimal': ['decimal'],
+            'date': ['date'],
+            'integer': ['integer', 'bigint']
+  }
+
+# Список имен колонок на листах файла EXCEL, которые должны присутствовать
+# Названия колонок используются в программе, так что менять их без изменения кода нельзя
+# Замена названий колонок может быть выполнена через секцию col_aliases
+# Регистр букв не имеет значения
+excel_data_definition:
+  columns:
+    'Детали загрузок Src-RDV':
+      - 'Algorithm_UID'
+      - 'SubAlgorithm_UID'
+      - 'version_end'
+      - 'Src_table'
+      - 'Src_attr'
+      - 'Src_attr_datatype'
+      - 'Src_PK'
+      - 'Expression'
+      - 'Comment'
+      - 'Tgt_table'
+      - 'Tgt_PK'
+      - 'Tgt_attribute'
+      - 'Tgt_attr_datatype'
+      - 'Tgt_attr_mandatory'
+      - 'Attr:Conversion_type'
+      - 'Attr:BK_Schema'
+      - 'Attr:BK_Object'
+      - 'Attr:nulldefault'
+    'Перечень загрузок Src-RDV':
+      - 'algorithm_uid'
+      - 'subalgorithm_uid'
+      - 'version'
+      - 'version_end'
+      - 'flow_name'
+      - 'tgt_table'
+      - 'target_rdv_object_type'
+      - 'src_table'
+      - 'source_name'
+      - 'scd_type'
+      - 'algo_name'
+      - 'data_filtering'
+      - 'distribution_field'
+      - 'comment'
+
+  # Список псевдонимов имен колонок. У каждого имени может быть один псевдоним.
+  # "Название колонки в программе": "Название колонки на листе"
+  col_aliases:
+    'Детали загрузок Src-RDV':
+      'Algorithm_UID': 'UID'
+      'subalgorithm_uid': 'Sub_UID'
+      'comment': 'Src_attr_desc'
+      'tgt_attribute': 'Tgt_attr'
+
+    'Перечень загрузок Src-RDV':
+      'Algorithm_UID': 'UID'
+      'subalgorithm_uid': 'Sub_UID'
+      'tgt_table': 'Target_table'
+#      'target_rdv_object_type': 'Trarget_DV_Object_Type'
+      'src_table': 'Source_table'

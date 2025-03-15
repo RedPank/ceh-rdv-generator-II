@@ -1,0 +1,70 @@
+{
+    "resource_cd": "ceh.{{ctx.schema}}.{{ctx.hub_name_only}}.{{ctx.business_key_schema}}",
+    "resource_desc": "Хаб {{ctx.hub_name_only}}",
+    "tags": [
+{%- if tags|length > 0 %}
+{%- for tag in tags %}
+        {{tag}}{%- if not loop.last -%},{% endif -%}
+{%- endfor %}
+{%- endif %}
+    ],
+    "features": {
+        "domain": "{{ctx.schema}}"
+    },
+    "configuration": null,
+    "is_readonly": false,
+    "status": "active",
+    "datasets": [
+        {
+            "name": "{{ctx.hub_name_only}}",
+            "schema_name": "{{ctx.schema}}",
+            "filter": "",
+            "columns": [
+                {
+                    "name": "src_cd",
+                    "type": "text",
+                    "primary_key": false,
+                    "nullable": false
+                },
+                {
+                    "name": "version_id",
+                    "type": "bigint",
+                    "primary_key": false,
+                    "nullable": false
+                },
+                {
+                    "name": "invalid_id",
+                    "type": "bigint",
+                    "primary_key": false,
+                    "nullable": false
+                },
+                {
+                    "name": "bk_type",
+                    "type": "text",
+                    "primary_key": false,
+                    "nullable": false
+                },
+                {
+                    "name": "{{ctx.id_field}}",
+                    "type": "text",
+                    "primary_key": false,
+                    "nullable": false
+                },
+                {
+                    "name": "{{ctx.rk_field}}",
+                    "type": "bigint",
+                    "primary_key": false,
+                    "nullable": false
+                }
+            ],
+            "physical_options": ""
+        }
+    ],
+    "metrics": {
+        "{{ctx.actual_dttm_name}}": {
+            "id": "ceh.{{ctx.schema}}.{{ctx.hub_name_only}}:{{ctx.actual_dttm_name}}",
+            "query": "[.last_sources[].conf.by_src | select(. != null) | .[] | to_entries | .[] | select(.key == \"{{ctx.actual_dttm_name}}\" and .value != \"default_value\" and .value != null).value] | min",
+            "default": "default_value"
+        }
+    }
+}

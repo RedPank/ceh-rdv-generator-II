@@ -1,0 +1,18 @@
+schema_version: '1.1'
+type: DB_TABLE
+name: {{ ctx.table }}
+data_source_type: GENERIC
+source_system: {{ ctx.src_cd }}
+data_capture_mode: {{ ctx.data_capture_mode }}
+
+columns:
+{%- for field in ctx.fields %}
+  - name: {{ field.name.lower() }}
+{%- if field.data_type.upper() in ['STRING', 'VARCHAR'] %}
+    type: TEXT
+{%- elif field.data_type.upper() in ['INT'] %}
+    type: INTEGER
+{%- else %}
+    type: {{ field.data_type.upper() }}
+{%- endif %}
+{%- endfor %}

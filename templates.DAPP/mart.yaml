@@ -1,0 +1,61 @@
+schema_version: '1.0'
+type: MART
+name: {{ ctx.table_name }}
+schema: rdv
+
+columns:
+{%- for field in ctx.fields %}
+{%- if field.name == 'hash_diff' %}
+  - name: hash_diff
+    type: CHAR
+    nullable: false
+    params:
+      length: 32
+{%- else %}
+  - name: {{ field.name }}
+    type: {{ field.data_type.upper() }}
+{%- if not(field.is_nullable) %}
+    nullable: false
+{%- else %}
+    nullable: true
+{%- endif %}
+{%- endif %}
+{%- endfor %}
+
+{%- if ctx.hash_fields|length > 0 %}
+hash_src_fields:
+{%- for hash_field in ctx.hash_fields %}
+  - {{ hash_field.lower() }}
+{%- endfor %}
+{%- else %}
+hash_src_fields: []
+{%- endif %}
+
+{%- if ctx.multi_fields|length > 0 %}
+multi_fields:
+{%- for field in ctx.multi_fields %}
+  - name: {{ field }}
+    field_data_quality_checks:
+    - name: IsEmpty
+{%- endfor %}
+{%- else %}
+multi_fields: []
+{%- endif %}
+
+ref_fields: []
+
+{%- if ctx.hub_ctx_list|length > 0 %}
+hub_fields:
+{%- for hub_field in ctx.hub_ctx_list %}
+  - name: {{ hub_field.name }}
+    hub_table: {{ hub_field.hub_name_only }}
+    hub_schema: {{ hub_field.hub_schema }}
+    is_bk: {{ hub_field.is_bk }}
+{%- endfor %}
+{%- else %}
+hub_fields: []
+{%- endif %}
+
+{%- if ctx.tgt_history_field|length > 0 %}
+history_field: {{ ctx.tgt_history_field }}
+{%- endif %}
