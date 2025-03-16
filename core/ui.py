@@ -9,18 +9,17 @@ from jinja2 import TemplateNotFound
 
 from core.map_gen import mapping_generator
 import core.exceptions as exp
-from core.config import Config as Conf
+from core.config import Config
 
 
 class MainWindow(tk.Tk):
     def __init__(self):
         super().__init__()
 
-        author: str = Conf.author
-        self.file_path = tk.StringVar(value=Conf.excel_file)
-        # self.author = tk.StringVar(value=author)
+        author: str = Config.author
+        self.file_path = tk.StringVar(value=Config.excel_file)
 
-        self.env = Conf.env
+        self.env = Config.env
 
         self.wm_title("Генератор файлов описания src-rdv потока")
         # self.geometry("500x500")
@@ -49,11 +48,11 @@ class MainWindow(tk.Tk):
         open_file_dialog_button.pack(fill=tk.X, padx=25, pady=0)
 
         # Дополнительная информация
-        text_info: str = (f'Конфиг:  {Conf.config_file}\n'
-                          f'Шаблоны: {Conf.templates_path}\n'
+        text_info: str = (f'Конфиг:  {Config.config_file}\n'
+                          f'Шаблоны: {Config.templates_path}\n'
                           '\n'
-                          f'Каталог: {Conf.out_path}\n'
-                          f'Журнал:  {Conf.log_file}\n'
+                          f'Каталог: {Config.out_path}\n'
+                          f'Журнал:  {Config.log_file}\n'
                           f'Автор:   {author}\n'
                           )
         self.info_text = tk.StringVar(value=text_info)
@@ -96,7 +95,7 @@ class MainWindow(tk.Tk):
         exit_button.grid(row=0, column=2, sticky=tk.E, padx=10)
 
     def _setup_file_path(self):
-        initial_dir: str = Conf.out_path
+        initial_dir: str = Config.out_path
         filetypes = [('Excel files', '*.xls'), ('Excel files', '*.xlsx'), ('All files', '*.*')]
         title = "Выбор файла"
 
@@ -106,7 +105,7 @@ class MainWindow(tk.Tk):
 
     @staticmethod
     def _view_log():
-        subprocess.Popen(args=Conf.log_viewer)
+        subprocess.Popen(args=Config.log_viewer)
 
     def _export_mapping(self):
         msg: str
@@ -128,17 +127,17 @@ class MainWindow(tk.Tk):
 
                 mapping_generator(
                     file_path=self.file_path.get(),
-                    out_path=Conf.out_path
+                    out_path=Config.out_path
                 )
 
-                if Conf.is_error:
+                if Config.is_error:
                     msg = ("Во время обработки были ошибки.\n"
                            "Прочитайте описание ошибок (error) "
                            "в журнале работы программы!")
                     showerror("Ошибка", msg)
                     logging.info("Обработка завершена с ошибками")
 
-                elif Conf.is_warning:
+                elif Config.is_warning:
                     msg = ("Обработка завершена c предупреждениями.\n"
                            "Прочитайте предупреждения (warning) "
                            "в журнале работы программы.")

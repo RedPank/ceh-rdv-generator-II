@@ -11,7 +11,7 @@ from core.flowcontext import FlowContext, Source, Target, Hub, Mart, MartField, 
 from core.mapping import MappingMeta
 from core.stream_header_data import StreamHeaderData
 import logging
-from core.config import Config as Conf, Config
+from core.config import Config
 import re
 import copy
 
@@ -28,8 +28,8 @@ def mapping_generator(
         out_path (str): Каталог, в котором будут сформированы подкаталоги с описанием потоков
     """
 
-    Conf.is_warning = False
-    Conf.is_error = False
+    Config.is_warning = False
+    Config.is_error = False
 
     logging.info(f"file_path: {file_path}")
     logging.info(f"out_path: {out_path}")
@@ -75,7 +75,7 @@ def mapping_generator(
             logging.info(f"{wrk_index}: {sh_data.flow_name}")
 
             # Проверяем таблицу-источник
-            pattern: str = Conf.get_regexp('src_table_name_regexp')
+            pattern: str = Config.get_regexp('src_table_name_regexp')
             if not re.match(pattern, sh_data.src_full_name):
                 logging.error(f'Имя таблицы-источника "{sh_data.src_full_name}" на листе "Перечень загрузок Src-RDV"'
                               f' не соответствует шаблону "{pattern}"')
@@ -85,7 +85,7 @@ def mapping_generator(
             logging.info(f'Таблица-источник: {sh_data.src_full_name}')
 
             # Проверяем соответствие названия целевой таблицы шаблону
-            pattern: str = Conf.get_regexp('tgt_table_name_regexp')
+            pattern: str = Config.get_regexp('tgt_table_name_regexp')
             if not re.match(pattern, tgt_full_name):
                 logging.error(f'Целевая таблица: "{tgt_full_name}" на листе "Перечень загрузок Src-RDV" '
                               f'не соответствует шаблону "{pattern}"')
@@ -172,7 +172,7 @@ def mapping_generator(
                             name=sh_data.src_table))
             flow_context.add_local_metric(local_metric=local_metric)
 
-            delta_mode = Conf.config.get("delta_mode", 'new')
+            delta_mode = Config.config.get("delta_mode", 'new')
             actual_dttm_name = f"{src_cd.lower()}_dttm_name"
 
             mart_mapping: Mart = (
@@ -222,7 +222,7 @@ def mapping_generator(
         # Конец цикла по списку таблиц #################################################################################
 
         if is_table_error:
-            Conf.is_error = True
+            Config.is_error = True
             logging.error(f'Файлы потока "{flow_name}" не были сформированы!')
             continue
 
@@ -248,7 +248,7 @@ def mapping_generator(
 
     # Конец цикла по списку потоков #№№№################################################################################
 
-    if Conf.is_error:
+    if Config.is_error:
         logging.error(f'Один или более потоков не были сформированы из-за обнаруженных ошибок')
 
     logging.info('')

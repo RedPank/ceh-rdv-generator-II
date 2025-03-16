@@ -11,7 +11,7 @@ encoding: 'utf-8'
 
 # Автор проекта.
 anchor_author: &author
-  "Alexey Blagov"
+  "User Name"
 # Команда проекта.
 anchor_team: &team
   "zi21"

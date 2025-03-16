@@ -11,7 +11,7 @@ from core.ui import MainWindow
 
 def main() -> int:
 
-    parser = argparse.ArgumentParser(prog="ceh-rdv-generator")
+    parser = argparse.ArgumentParser(prog="ceh-rdv-generator-II")
     parser.add_argument(
         "-c", "--config",
         type=str,
@@ -28,6 +28,8 @@ def main() -> int:
                         format="%(asctime)s %(levelname)s %(message)s",
                         encoding='utf-8')
 
+    print("ceh-rdv-generator-II")
+    print("Формирование файлов потоков AirFlow для загрузки данных из внешних источников в слой RDV системы ЦЕХ")
     print(f"config={config_name}")
     print(f"log_file={Config.log_file}")
 
@@ -47,7 +49,7 @@ def main() -> int:
     win = MainWindow()
 
     # Смена иконки программы
-    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("VTB.ceh.ceh-rdv-generator.1_0")
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("VTB.ceh.ceh-rdv-generator-II.1_0")
     resource_path = os.path.join(pathlib.Path(__file__).parent.resolve(), 'res')
     win.iconbitmap(os.path.join(resource_path, "ceh-icon.ico"))
     image = tkinter.PhotoImage(file=os.path.join(resource_path, "ceh-icon.png"))

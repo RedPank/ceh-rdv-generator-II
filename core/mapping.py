@@ -5,7 +5,6 @@ import pandas as pd
 from pandas import DataFrame
 
 from core.config import Config
-from core.config import Config as Conf
 from core.exceptions import IncorrectMappingException
 
 
@@ -63,8 +62,6 @@ def _generate_mapping_df(file_data: bytes, sheet_name: str):
                 logging.error(f"Колонка '{col_name}' не найдена на листе '{sheet_name}'")
                 logging.info("Список допустимых имен колонок:")
                 logging.info(columns_list)
-                # logging.info("Список колонок на листе EXCEL:")
-                # logging.info(mapping.columns.values)
                 error = True
 
     if error:
@@ -137,7 +134,7 @@ class MappingMeta:
 
         # Удаляем данные, которые не попадают в фильтр из файла конфигурации.
         # Список шаблонов имен потоков и/или имен потоков, которые будут обработаны.
-        wf_templates_list = Conf.config.get('wf_templates_list', list('.+'))
+        wf_templates_list = Config.config.get('wf_templates_list', list('.+'))
 
         # Список потоков, имена которых соответствуют шаблонам
         pattern = '|'.join(wf_templates_list)
