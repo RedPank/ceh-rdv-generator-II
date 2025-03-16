@@ -33,9 +33,9 @@ anchor_area: &area
 # Если задается полное имя потока, то в начале ставится знак "^", а в конце - "$"
 # Иначе поиск будет вестись по совпадению любой части имени с шаблоном
 wf_templates_list:
-#  - ".+"
-  - "^wf_app_savc_dapp_rdv_mart_payment_savcsa_rtldpstmntransfernstrctn_savc$"
-  - "^wf_app_savc_dapp_rdv_savcsa_depositparticipant$"
+  - ".+"
+#  - "^wf_app_savc_dapp_rdv_mart_payment_savcsa_rtldpstmntransfernstrctn_savc$"
+#  - "^wf_app_savc_dapp_rdv_savcsa_depositparticipant$"
 #  - "^wf_app_mssa_dapp_rdv_mart_product_additional_service$"
 #  - "^wf_app_mssa_dapp_rdv_mart_application_product_insurance$"
 
@@ -62,11 +62,11 @@ log_file: "generator.log"
 # Каталог, в котором будут создаваться подкаталоги потоков
 # Если задан не "абсолютный" путь, то каталог создается "рядом" с файлом main.py
 # Если задать пустое значение, то каталог потоков будет назван AFlows
-out_path: "C:\\Projects\\FD5-4290\\rdv"
+out_path: "C:\\Projects\\rdv"
 
 # Имя файла EXCEL с маппингом потоков дял отображения в диалог выбора.
 # В диалоге можно выбрать любой другой файл маппинга для обработки.
-excel_file: "C:\\Projects\\FD5-4290\\rdv\\Маппинг_ЦЕХ_RDV_SAVC_v7.0.xlsx"
+excel_file: "C:\\Projects\\rdv\\Маппинг_ЦЕХ_RDV_SAVC_v7.0.xlsx"
 
 ########################################################################################################################
 

@@ -202,6 +202,8 @@ class MappingMeta:
         self.mapping_df['tgt_pk'] = self.mapping_df['tgt_pk'].str.lower()
         self.mapping_df['tgt_pk'] = self.mapping_df['tgt_pk'].str.strip()
 
+        self.mapping_df['comment'] = self.mapping_df['comment'].fillna(value="")
+
         # Проверяем состав поля 'tgt_pk'
         err_rows: pd.DataFrame = self.mapping_df[~self.mapping_df['tgt_pk'].apply(test_tgt_pk)]
         if len(err_rows) > 0:
