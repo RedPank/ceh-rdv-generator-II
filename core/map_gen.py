@@ -185,10 +185,12 @@ def mapping_generator(
             )
 
             for f_index, f_row in tgt_mapping.iterrows():
-                mart_field: MartField = (
-                    MartField(tgt_field=f_row["tgt_attribute"], value_type=f_row["src_attr_datatype"],
-                              value=f_row["src_attribute"], tgt_field_type=f_row["tgt_attr_datatype"]))
+                # mart_field: MartField = (
+                #     MartField(value=f_row["src_attribute"], expression=f_row["expression"],
+                #               value_type=f_row["src_attr_datatype"],
+                #               tgt_field_type=f_row["tgt_attr_datatype"], tgt_field=f_row["tgt_attribute"],))
 
+                mart_field = MartField.create_mart_field(f_row)
                 mart_mapping.add_fields_map(copy.copy(mart_field))
 
 

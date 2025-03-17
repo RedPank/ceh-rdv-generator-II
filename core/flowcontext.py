@@ -169,39 +169,65 @@ class LocalMetric:
 
 class MartField:
 
-    def __init__(self, tgt_field: str, value_type: str, value: str, tgt_field_type: str):
+    def __init__(self, tgt_field: str, value_type: str, value: str, expression: str, tgt_field_type: str):
         self.tgt_field = tgt_field
         self.value_type = value_type
         self.value = value
+        self.expression = expression
         self.tgt_field_type = tgt_field_type
 
     @staticmethod
     def create_mart_field(row: Series):
 
-        src_attr: str = str(row["src_attr"]).strip().lower()
+        src_attr: str = str(row["src_attribute"]).strip().lower()
         src_attr_datatype:str = str(row["src_attr_datatype"]).strip().lower()
-        tgt_field:str = str(row["tgt_attr"]).strip().lower()
+        tgt_field:str = str(row["tgt_attribute"]).strip().lower()
         tgt_field_type:str = str(row["tgt_attr_datatype"]).strip().lower()
-        expression: str = str(row["expression"]).strip()
+        expression: str = str(row["expression"]).strip().removeprefix('=')
+        value = src_attr
 
         if expression:
             value_type = "sql_expression"
-            # Удаляем знак "=", который должен быть первым
-            value = expression[1:].strip()
+            expression = expression + ' :: ' + tgt_field_type.upper()
+
         elif src_attr_datatype in ["string"] and tgt_field_type in ["text"]:
-            value_type = "column"
-            value = row["src_attr"]
+            value_type = "sql_expression"
+            expression = f"case when {src_attr} = '' then Null else {src_attr} end"  + ' :: ' + tgt_field_type.upper()
+
         elif src_attr_datatype in ["string"] and tgt_field_type in ["timestamp"]:
             value_type = "sql_expression"
-            value = src_attr + "::TIMESTAMP"
+            expression = f"etl.try_cast2ts({src_attr})"
+
         elif src_attr_datatype in ["string"] and tgt_field_type in ["date"]:
             value_type = "sql_expression"
-            value = src_attr + "::DATE"
+            expression = f"etl.try_cast2dt({src_attr})"
+
+        elif src_attr_datatype in ["string"] and tgt_field_type in ["smallint", "int2"]:
+            value_type = "sql_expression"
+            expression = f"etl.try_cast2int2({src_attr})"
+
+        elif src_attr_datatype in ["string"] and tgt_field_type in ["int", "integer", "int4"]:
+            value_type = "sql_expression"
+            expression = f"etl.try_cast2int4({src_attr})"
+
+        elif src_attr_datatype in ["string"] and tgt_field_type in ["bigint", "int8"]:
+            value_type = "sql_expression"
+            expression = f"etl.try_cast2int8({src_attr})"
+
+        elif src_attr_datatype in ["string"] and tgt_field_type in ["bool", "boolean"]:
+            value_type = "sql_expression"
+            expression = f"etl.try_cast2bool({src_attr})"
+
+        elif src_attr_datatype in ["string"] and tgt_field_type in ["decimal"]:
+            value_type = "sql_expression"
+            expression = f"etl.try_cast2decimal({src_attr})"
+
         else:
             value_type = "column"
             value = src_attr
 
-        fld = MartField(tgt_field=tgt_field, value_type = value_type, value=value, tgt_field_type=tgt_field_type.upper())
+        fld = MartField(tgt_field=tgt_field, value_type = value_type, value=value,
+                        tgt_field_type=tgt_field_type.upper(),expression=expression)
         return fld
 
 class MartHub:
@@ -230,18 +256,9 @@ class MartHub:
         if self.expression:
             if self.src_type.upper() == 'STRING':
                 self.expression = f"case when {self.expression} = '' then Null else {self.expression} end"
-
-                if self.field_type.lower() != 'text':
-                    self.expression = self.expression + f'::{self.field_type.lower()}'
-            # else:
-            #     if self.src_type.lower() != self.field_type.lower():
-            #         self.expression = self.expression + f'::{self.field_type.lower()}'
         else:
             if self.src_type.upper() == 'STRING':
                 self.expression = f"case when {src_attribute} = '' then Null else {src_attribute} end"
-
-            # if self.src_type.lower() != self.field_type.lower():
-            #     self.expression = self.src_attribute + f'::{self.field_type.lower()}'
 
 
 class Mart:
@@ -280,7 +297,7 @@ class Mart:
                 # Описание поля
                 fld = add_field_map_ctx_lis[tgt_field]
                 mart_field = MartField(tgt_field=tgt_field, value_type=fld.type, value=fld.value,
-                                       tgt_field_type=fld.field_type.upper())
+                                       tgt_field_type=fld.field_type.upper(), expression="")
                 self.add_fields_map(mart_field)
 
     def add_fields_map(self, mart_field: MartField):
