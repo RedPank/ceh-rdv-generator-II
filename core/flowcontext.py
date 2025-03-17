@@ -204,8 +204,8 @@ class MartField:
         return fld
 
 class MartHub:
-    def __init__(self, hub_target: str, rk_field: str, business_key_schema: str, on_full_null: str, field: str,
-                 src_type: str, field_type: str, is_bk: bool, schema: str):
+    def __init__(self, hub_target: str, rk_field: str, business_key_schema: str, on_full_null: str, src_attribute: str,
+                 src_type: str, field_type: str, is_bk: bool, schema: str, expression: str):
 
         self.schema = schema            # Схема в базе данных, где расположена хаб-таблица
         self.hub_target = hub_target    # Имя хаб-таблицы без схемы
@@ -217,7 +217,8 @@ class MartHub:
 
         self.business_key_schema = business_key_schema
         self.on_full_null = on_full_null
-        self.field = field
+        self.src_attribute = src_attribute
+        self.expression = expression
         self.src_type = src_type
         self.field_type = field_type
         self.is_bk = 'true' if is_bk else 'false'

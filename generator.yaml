@@ -33,9 +33,9 @@ anchor_area: &area
 # Если задается полное имя потока, то в начале ставится знак "^", а в конце - "$"
 # Иначе поиск будет вестись по совпадению любой части имени с шаблоном
 wf_templates_list:
-  - ".+"
+#  - ".+"
 #  - "^wf_app_savc_dapp_rdv_mart_payment_savcsa_rtldpstmntransfernstrctn_savc$"
-#  - "^wf_app_savc_dapp_rdv_savcsa_depositparticipant$"
+  - "^wf_app_savc_dapp_rdv_savcsa_depositparticipant$"
 #  - "^wf_app_mssa_dapp_rdv_mart_product_additional_service$"
 #  - "^wf_app_mssa_dapp_rdv_mart_application_product_insurance$"
 
@@ -246,7 +246,7 @@ excel_data_definition:
       - 'SubAlgorithm_UID'
       - 'version_end'
       - 'Src_table'
-      - 'Src_attr'
+      - 'Src_attribute'
       - 'Src_attr_datatype'
       - 'Src_PK'
       - 'Expression'
@@ -284,6 +284,7 @@ excel_data_definition:
       'subalgorithm_uid': 'Sub_UID'
       'comment': 'Src_attr_desc'
       'tgt_attribute': 'Tgt_attr'
+      'src_attribute': 'src_attr'
 
     'Перечень загрузок Src-RDV':
       'Algorithm_UID': 'UID'

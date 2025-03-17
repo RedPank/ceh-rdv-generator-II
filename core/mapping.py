@@ -181,13 +181,16 @@ class MappingMeta:
         self.mapping_df = self.mapping_df.query(f"tgt_table in {self._tgt_tables_list}")
 
         # Преобразуем значения в "нужный" регистр
-        self.mapping_df['src_attr'] = self.mapping_df['src_attr'].fillna(value="")
-        self.mapping_df['src_attr'] = self.mapping_df['src_attr'].str.lower()
-        self.mapping_df['src_attr'] = self.mapping_df['src_attr'].str.strip()
+        self.mapping_df['src_attribute'] = self.mapping_df['src_attribute'].fillna(value="")
+        self.mapping_df['src_attribute'] = self.mapping_df['src_attribute'].str.lower()
+        self.mapping_df['src_attribute'] = self.mapping_df['src_attribute'].str.strip()
 
         self.mapping_df['src_attr_datatype'] = self.mapping_df['src_attr_datatype'].fillna(value="")
         self.mapping_df['src_attr_datatype'] = self.mapping_df['src_attr_datatype'].str.lower()
         self.mapping_df['src_attr_datatype'] = self.mapping_df['src_attr_datatype'].str.strip()
+
+        self.mapping_df['expression'] = self.mapping_df['expression'].fillna(value="")
+        self.mapping_df['expression'] = self.mapping_df['expression'].str.strip()
 
         self.mapping_df['tgt_attribute'] = self.mapping_df['tgt_attribute'].fillna(value="")
         self.mapping_df['tgt_attribute'] = self.mapping_df['tgt_attribute'].str.lower()
@@ -203,6 +206,8 @@ class MappingMeta:
         self.mapping_df['tgt_pk'] = self.mapping_df['tgt_pk'].str.strip()
 
         self.mapping_df['comment'] = self.mapping_df['comment'].fillna(value="")
+        self.mapping_df['comment'] = self.mapping_df['comment'].str.strip()
+
 
         # Проверяем состав поля 'tgt_pk'
         err_rows: pd.DataFrame = self.mapping_df[~self.mapping_df['tgt_pk'].apply(test_tgt_pk)]
@@ -221,11 +226,20 @@ class MappingMeta:
         self.mapping_df = self.mapping_df.assign(_rk=lambda _df: _df['tgt_pk'].str.
                                                  extract(r'(^|,)(?P<_rk>rk|bk)(,|$)')['_rk'])
 
+        # Заменяем значения NaN на пустые строки, что-бы дальше "не мучиться"
+        self.mapping_list['scd_type'] = self.mapping_list['scd_type'].fillna(value="")
+
+        # Проверяем поля expression
+        exp_err = self.mapping_df.query("expression != '' and src_attribute != ''")
+        if len(exp_err) > 0:
+            logging.error("Поля 'expression' и 'src_attribut' взаимоисключающие и не могут быть заполнены одновременно")
+
+            logging.error ('Список строк с ошибками:\n' + str(exp_err[['src_table', 'src_attribute', 'expression', 'tgt_table', 'tgt_attribute']]))
+            is_error = True
+
         if is_error:
             raise IncorrectMappingException("Ошибка в структуре данных")
 
-        # Заменяем значения NaN на пустые строки, что-бы дальше "не мучиться"
-        self.mapping_list['scd_type'] = self.mapping_list['scd_type'].fillna(value="")
 
     def get_tgt_tables_list(self) -> list[str]:
         """
@@ -245,7 +259,7 @@ class MappingMeta:
         Возвращает список (DataFrame) строк для заданной целевой таблицы
         """
         df = self.mapping_df[self.mapping_df['src_table'] == src_table].dropna(how="all")
-        df = df[['src_table', 'src_attr', 'src_attr_datatype', 'src_pk', 'comment']]
+        df = df[['src_table', 'src_attribute', 'src_attr_datatype', 'src_pk', 'comment']]
         return df
 
     def get_src_cd_by_table(self, tgt_table: str) -> str | None:

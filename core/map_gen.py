@@ -150,7 +150,7 @@ def mapping_generator(
                                     resource_cd=sh_data.tgt_resource_cd, src_cd=src_cd.lower())
             # Список хабов
             hubs: pd.DataFrame = tgt_mapping[tgt_mapping['attr:conversion_type'] == 'hub']
-            hubs = hubs[['tgt_attribute', 'attr:bk_schema', 'attr:bk_object', 'attr:nulldefault', 'src_attr',
+            hubs = hubs[['tgt_attribute', 'attr:bk_schema', 'attr:bk_object', 'attr:nulldefault', 'src_attribute',
                        'expression', 'tgt_pk', 'tgt_attr_datatype', '_pk', 'src_attr_datatype', 'tgt_attr_mandatory']]
 
             for h_index, h_row in hubs.iterrows():
@@ -187,7 +187,7 @@ def mapping_generator(
             for f_index, f_row in tgt_mapping.iterrows():
                 mart_field: MartField = (
                     MartField(tgt_field=f_row["tgt_attribute"], value_type=f_row["src_attr_datatype"],
-                              value=f_row["src_attr"], tgt_field_type=f_row["tgt_attr_datatype"]))
+                              value=f_row["src_attribute"], tgt_field_type=f_row["tgt_attr_datatype"]))
 
                 mart_mapping.add_fields_map(copy.copy(mart_field))
 
@@ -196,8 +196,9 @@ def mapping_generator(
 
                 mart_hub = MartHub(rk_field=h_row['tgt_attribute'], hub_target=h_row['attr:bk_object'].split('.')[1],
                                    business_key_schema=h_row['attr:bk_schema'],
-                                   on_full_null=h_row['attr:nulldefault'], field=h_row['attr:bk_object'].split('.')[2],
-                                   src_type=h_row['src_attr_datatype'], field_type=h_row['tgt_attr_datatype'],
+                                   on_full_null=h_row['attr:nulldefault'], src_attribute=h_row['src_attribute'],
+                                   src_type=h_row['src_attr_datatype'], expression=h_row['expression'],
+                                   field_type=h_row['tgt_attr_datatype'],
                                    is_bk=h_row['_pk'] == 'pk', schema=h_row['attr:bk_object'].split('.')[0])
                 mart_mapping.add_mart_hub_list(mart_hub=mart_hub)
 
@@ -218,6 +219,10 @@ def mapping_generator(
                 target_table.add_field(field=data_base_field)
 
             flow_context.add_target_table(target_table=target_table)
+
+            if len(target_table.hash_fields) > 100:
+                logging.warning(f"Количество полей для расчета hash_diff в таблице {target_table.table_name} более 100")
+                Config.is_warning = True
 
         # Конец цикла по списку таблиц #################################################################################
 

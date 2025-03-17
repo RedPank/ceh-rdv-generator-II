@@ -87,23 +87,32 @@ mappings:
           business_key_schema: {{ hub.business_key_schema }}
           on_full_null: {{ hub.on_full_null }}
           field_map:
-            {{ hub.field }}:
-            {%- if hub.src_type == "string" %}
+            {{ hub.id_field }}:
+            {%- if hub.expression %}
+              {% if hub.src_type == "string" -%}                    
               type: sql_expression
               value: | 
                 case 
-                  when {{ hub.value }} = '' then null
-                  else {{ hub.value }}
+                  when {{ hub.expression }} = '' then null
+                  else {{ hub.expression }}
                 end
               field_type: TEXT
-            {%- else %}
-              {% if hub.value -%}
+              {%- else %}
               type: column
-              value: {{ hub.value }}
-              field_type: {{hub.field_type}}
-              {% else -%}
-              type: sql_expression
               value: {{ hub.expression }}
+              {% endif -%}      
+            {%- else %}
+              {% if hub.src_type == "string" -%}         
+              value: | 
+                case 
+                  when {{ hub.src_attribute }} = '' then null
+                  else {{ hub.src_attribute }}
+                end
+              field_type: TEXT
+              {% else -%}      
+              type: column
+              value: {{ hub.src_attribute }}
+              field_type: {{hub.field_type}}
               {% endif -%}
             {% endif -%}
 
