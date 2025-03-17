@@ -215,11 +215,11 @@ field_type_list:
 
   # Список возможных значений колонки "Src_attr_datatype"
   # Фрейм поддерживает ограниченное количество типов.
-  src_attr_datatype: ['text', 'string', 'timestamp', 'smallint', 'bigint', 'decimal', 'integer']
+  src_attr_datatype: ['text', 'string', 'timestamp', 'smallint', 'integer', 'bigint', 'decimal']
 
   # Список возможных значений колонки "Tgt_attr_datatype"
   # Фрейм поддерживает ограниченное количество типов.
-  tgt_attr_datatype: ['text', 'timestamp', 'char(32)', 'smallint', 'bigint', 'boolean', 'integer', 'decimal', 'date']
+  tgt_attr_datatype: ['text', 'timestamp', 'char(32)', 'smallint', 'integer', 'bigint', 'boolean', 'decimal', 'date']
 
   # Список "корреспонденций" типов данных источника и целевой таблицы
   # Если "пара" типа данных источника и целевой таблицы (из EXCEL) не найдена в списке, то выдается
@@ -229,10 +229,10 @@ field_type_list:
             'string': ['text'],
             'timestamp': ['timestamp'],
             'smallint': ['smallint'],
+            'integer': ['integer'],
             'bigint': ['bigint'],
             'decimal': ['decimal'],
-            'date': ['date'],
-            'integer': ['integer', 'bigint']
+            'date': ['date']
   }
 
 # Список имен колонок на листах файла EXCEL, которые должны присутствовать
