@@ -71,8 +71,9 @@ def mapping_generator(
             # Данные для заданной целевой таблицы
             tgt_mapping: DataFrame = mapping_meta.get_mapping_by_tgt_table(tgt_full_name)
 
+            logging.info('')
             logging.info('>>>>> Begin >>>>>')
-            logging.info(f"{wrk_index}: {sh_data.flow_name}")
+            logging.info(f"{wrk_index+1}: {sh_data.flow_name}")
 
             # Проверяем таблицу-источник
             pattern: str = Config.get_regexp('src_table_name_regexp')
@@ -153,7 +154,17 @@ def mapping_generator(
             hubs = hubs[['tgt_attribute', 'attr:bk_schema', 'attr:bk_object', 'attr:nulldefault', 'src_attribute',
                        'expression', 'tgt_pk', 'tgt_attr_datatype', '_pk', 'src_attr_datatype', 'tgt_attr_mandatory']]
 
+            pattern: str = Config.get_regexp('bk_schema_regexp')
             for h_index, h_row in hubs.iterrows():
+
+                # Контроль названия бк-схемы
+                bk_schema = h_row['attr:bk_schema']
+                if not re.match(pattern, bk_schema):
+                    logging.error(
+                        f'Имя бк-схемы "{bk_schema}" на листе "Детали загрузок Src-RDV"'
+                        f' не соответствует шаблону "{pattern}"')
+                    is_table_error = True
+
                 bk_object:str = h_row['attr:bk_object']
                 target.add_hub(Hub(schema=bk_object.split('.')[0], table = bk_object.split('.')[1],
                                    resource_cd='ceh.'+bk_object))
