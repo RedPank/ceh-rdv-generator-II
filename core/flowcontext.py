@@ -1,6 +1,7 @@
 import string
 import random
 
+import numpy as np
 from pandas import Series
 from core.config import Config
 from core.exceptions import IncorrectMappingException
@@ -218,12 +219,30 @@ class MartHub:
         self.business_key_schema = business_key_schema
         self.on_full_null = on_full_null
         self.src_attribute = src_attribute
-        self.expression = expression
+        self.expression = expression if type(expression) is str else ''
         self.src_type = src_type
         self.field_type = field_type
         self.is_bk = 'true' if is_bk else 'false'
         self.src_cd = ''
         self.actual_dttm_name = ''
+
+        # Разбираемся со значениями
+        if self.expression:
+            if self.src_type.upper() == 'STRING':
+                self.expression = f"case when {self.expression} = '' then Null else {self.expression} end"
+
+                if self.field_type.lower() != 'text':
+                    self.expression = self.expression + f'::{self.field_type.lower()}'
+            # else:
+            #     if self.src_type.lower() != self.field_type.lower():
+            #         self.expression = self.expression + f'::{self.field_type.lower()}'
+        else:
+            if self.src_type.upper() == 'STRING':
+                self.expression = f"case when {src_attribute} = '' then Null else {src_attribute} end"
+
+            # if self.src_type.lower() != self.field_type.lower():
+            #     self.expression = self.src_attribute + f'::{self.field_type.lower()}'
+
 
 class Mart:
     # Список полей целевой таблицы, которые не будут добавлены в секцию field_map шаблона wf.yaml

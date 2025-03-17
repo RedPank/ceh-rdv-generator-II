@@ -89,31 +89,13 @@ mappings:
           field_map:
             {{ hub.id_field }}:
             {%- if hub.expression %}
-              {% if hub.src_type == "string" -%}                    
               type: sql_expression
-              value: | 
-                case 
-                  when {{ hub.expression }} = '' then null
-                  else {{ hub.expression }}
-                end
+              value: {{ hub.expression }} 
               field_type: TEXT
-              {%- else %}
-              type: column
-              value: {{ hub.expression }}
-              {% endif -%}      
             {%- else %}
-              {% if hub.src_type == "string" -%}         
-              value: | 
-                case 
-                  when {{ hub.src_attribute }} = '' then null
-                  else {{ hub.src_attribute }}
-                end
-              field_type: TEXT
-              {% else -%}      
               type: column
               value: {{ hub.src_attribute }}
               field_type: {{hub.field_type}}
-              {% endif -%}
             {% endif -%}
 
         {% endfor %}
