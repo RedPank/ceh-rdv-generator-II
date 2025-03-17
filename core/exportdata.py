@@ -156,7 +156,7 @@ class ExportData:
         exp_path = os.path.join(self.path, r"ceh-etl\general_ledger\src_rdv\schema\db_tables")
         os.makedirs(exp_path, exist_ok=True)
         for src in self.flow_context.sources:
-            file_path = os.path.join(exp_path, 'acc.' + src.table + '.yaml')
+            file_path = os.path.join(exp_path, src.table + '.yaml')
             template = self.env.get_template('db_table.yaml')
             output = template.render(ctx=src)
 
