@@ -1,8 +1,8 @@
-import string
 import random
+import string
 
-import numpy as np
 from pandas import Series
+
 from core.config import Config
 from core.exceptions import IncorrectMappingException
 
@@ -96,10 +96,6 @@ class TargetTable:
         # Поля, которые являются ссылками на hub - не включаются
         if field.is_pk and field.name not in self.hash_fields and field.name not in TargetTable._ignore_distributed_src:
             self.multi_fields.append(field.name)
-
-
-    def add_hub_field(self):
-        pass
 
 
 class Source:
@@ -236,8 +232,11 @@ class MartHub:
 
         self.schema = schema            # Схема в базе данных, где расположена хаб-таблица
         self.hub_target = hub_target    # Имя хаб-таблицы без схемы
+        self.table = hub_target
         self.hub_name_only = self.hub_target
         self.full_table_name = self.schema + '.' + self.hub_target
+        self.resource_cd = "ceh." + self.schema + '.' + self.hub_target
+        self.short_name = create_short_name(name=self.hub_target, short_name_len=22, random_str_len=6)
 
         self.rk_field = rk_field
         self.id_field = self.rk_field.removesuffix('_rk') + '_id'
@@ -361,7 +360,7 @@ class FlowContext:
 
         # Формируем уникальный список хабов потока
         for hub in mart.mart_hub_list:
-            if not [ctx.full_table_name for ctx in self.hubs if ctx.full_table_name == hub.full_table_name]:
+            if not [True for ctx in self.hubs if ctx.full_table_name == hub.full_table_name]:
                 self.hubs.append(hub)
 
 

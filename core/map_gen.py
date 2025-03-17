@@ -142,7 +142,7 @@ def mapping_generator(
 
             src_mapping = mapping_meta.get_mapping_by_src_table(src_table=sh_data.src_full_name)
             for s_index, s_row in src_mapping.iterrows():
-                source.add_field(DataBaseField(name=s_row['src_table'], data_type=s_row['src_attr_datatype'],
+                source.add_field(DataBaseField(name=s_row['src_attribute'], data_type=s_row['src_attr_datatype'],
                                                comment=s_row['comment'], is_nullable=False, is_pk=s_row['src_pk']))
 
             flow_context.add_source(source)

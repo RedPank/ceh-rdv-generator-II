@@ -29,17 +29,17 @@ targets:
     resource_cd: {{target.resource_cd}}
     schema: {{target.schema}}
     table: {{target.table}}
+{% endfor -%}
 
-  {% for hub in target.hubs %}
+{%- for hub in ctx.hubs %}
   - short_name: {{ hub.short_name }}
     schema: {{ hub.schema }}
-    table: {{ hub.table }}
+    table: {{ hub.hub_target }}
     resource_cd: ceh.{{ hub.resource_cd }}
-  {% endfor %}
-{%- endfor %}
+{% endfor -%}
 
 local_metrics:
-{% for local_metric in ctx.local_metrics %}
+{%- for local_metric in ctx.local_metrics %}
   wf_dataset_max_date_to:
     target: stage_T_input
     query: max(date_trunc('{{ local_metric.processed_dt_conversion }}', {{ local_metric.processed_dt }}))
@@ -48,7 +48,7 @@ local_metrics:
 
 mappings:
   marts:
-  {% for mart in ctx.marts %}
+  {%- for mart in ctx.marts %}
     - short_name: {{mart.short_name}}
       algorithm_uid: {{ mart.algorithm_uid }}
       algorithm_uid_2: {{ mart.algorithm_uid_2 }}
@@ -85,7 +85,7 @@ mappings:
 
       {%- if mart.mart_hub_list|length > 0 %}
       hub_map:
-        {% for hub in mart.mart_hub_list %}
+        {%- for hub in mart.mart_hub_list %}
         - rk_field: {{ hub.rk_field }} 
           target: {{ hub.hub_target }}
           business_key_schema: {{ hub.business_key_schema }}
