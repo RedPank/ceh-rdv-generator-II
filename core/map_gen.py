@@ -154,18 +154,25 @@ def mapping_generator(
             hubs = hubs[['tgt_attribute', 'attr:bk_schema', 'attr:bk_object', 'attr:nulldefault', 'src_attribute',
                        'expression', 'tgt_pk', 'tgt_attr_datatype', '_pk', 'src_attr_datatype', 'tgt_attr_mandatory']]
 
-            pattern: str = Config.get_regexp('bk_schema_regexp')
+            pattern_bk_schema: str = Config.get_regexp('bk_schema_regexp')
+            pattern_bk_object: str = Config.get_regexp('bk_object_regexp')
             for h_index, h_row in hubs.iterrows():
 
                 # Контроль названия бк-схемы
                 bk_schema = h_row['attr:bk_schema']
-                if not re.match(pattern, bk_schema):
+                if not re.match(pattern_bk_schema, bk_schema):
                     logging.error(
                         f'Имя бк-схемы "{bk_schema}" на листе "Детали загрузок Src-RDV"'
-                        f' не соответствует шаблону "{pattern}"')
+                        f' не соответствует шаблону "{pattern_bk_schema}"')
                     is_table_error = True
 
                 bk_object:str = h_row['attr:bk_object']
+                if not re.match(pattern_bk_object, bk_object):
+                    logging.error(
+                        f'Имя хаба "{bk_object}" на листе "Детали загрузок Src-RDV"'
+                        f' не соответствует шаблону "{pattern_bk_object}"')
+                    is_table_error = True
+
                 target.add_hub(Hub(schema=bk_object.split('.')[0], table = bk_object.split('.')[1],
                                    resource_cd='ceh.'+bk_object))
 
