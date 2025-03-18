@@ -1,11 +1,6 @@
-import logging
 import re
-
 import numpy as np
 import pandas as pd
-
-from core.exceptions import IncorrectMappingException
-
 
 class StreamHeaderData:
     """

@@ -1,4 +1,4 @@
-{# Шаблон для формирования yaml-файла описания рабочего потока #}
+# Created {{ ctx.created }}
 name: {{ ctx.flow_name }}
 type: WORK_FLOW
 schema_version: '1.16'

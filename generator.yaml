@@ -78,6 +78,7 @@ area: *area
 
 # Набор строк для секции metadata.tags в файлах потока cf/wf
 tags:
+  - author: *author
   - team: *team
   - area: *area
   - subo: *subo

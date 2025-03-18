@@ -58,7 +58,7 @@ class ExportData:
         for uni in self.flow_context.sources:
             file_path = os.path.join(exp_path, uni.file_name)
             template = self.env.get_template('uni_res.json')
-            output = template.render(ctx=uni)
+            output = template.render(ctx=uni, tags=self.flow_context.resource_tags)
 
             with open(file_path, "w", encoding="utf-8") as f:
                 f.write(output)

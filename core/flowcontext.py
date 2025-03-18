@@ -1,5 +1,6 @@
 import random
 import string
+from datetime import datetime
 
 from pandas import Series
 
@@ -345,6 +346,8 @@ class FlowContext:
         self.processed_dt_conversion = Config.setting_up_field_lists.get('processed_dt_conversion', 'second')
         self.tgt_history_field = Config.setting_up_field_lists.get('tgt_history_field', '')
 
+        self.created = f'"{datetime.now().strftime("%d %b %Y %H:%M:%S")}"'
+
 
     def add_source(self, source: Source):
         self.sources.append(source)
@@ -374,6 +377,8 @@ class FlowContext:
                 else:
                     self.resource_tags.append('"' +tag + '"')
 
+        # self.resource_tags.append(f'"created": "{datetime.now().strftime("%d %b %Y %H:%M:%S")}"')
+
         # Добавляем строки из файла конфигурации
         cfg_tags = Config.tags
         if type(cfg_tags) is list:
@@ -382,6 +387,8 @@ class FlowContext:
                     self.tags.append('"' + list(tag.keys())[0] + '"' + ':' + '"' + list(tag.values())[0] + '"')
                 else:
                     self.tags.append('"' + tag + '"')
+
+        # self.tags.append(f'"created": "{datetime.now().strftime("%d %b %Y %H:%M:%S")}"')
 
         # Добавляем динамические строки
         self.tags.append('src_cd: ' + self.targets[0].src_cd.upper())

@@ -121,4 +121,3 @@ class Config:
             logging.error(f'В файле конфигурации не найден шаблон с именем "{name}"')
             raise IncorrectConfigException()
 
-

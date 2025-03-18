@@ -9,6 +9,9 @@ from core.config import Config
 from core.ui import MainWindow
 
 
+program: str = "ceh-rdv-generator-II"
+version: str = "1.0"
+
 def main() -> int:
 
     parser = argparse.ArgumentParser(prog="ceh-rdv-generator-II")
