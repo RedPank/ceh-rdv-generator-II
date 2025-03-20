@@ -54,10 +54,15 @@ class StreamHeaderData:
         # self.algo_name = self.row_dict["algo_name"]
         # self.data_filtering = self.row_dict["data_filtering"]
         self.distribution_field = self.row["distribution_field"]
-        self.distribution_field = self.distribution_field.lower()
+        self.distribution_field = self.distribution_field.lower().strip()
         self.distribution_field = re.sub(r"\s", "", self.distribution_field)
-        self.distribution_field_list = self.distribution_field.split(',')
-        self.distribution_field_list.sort()
+
+        if type(self.distribution_field) is str:
+            self.distribution_field_list = self.distribution_field.split(',')
+            self.distribution_field_list.sort()
+        else:
+            self.distribution_field_list = []
+
         self.comment = self.row["comment"]
         if self.comment is None or self.comment == '' or np.isnan(self.comment):
             self.comment = f"{self.target_rdv_object_type.upper()}-таблица {self.tgt_full_name}"

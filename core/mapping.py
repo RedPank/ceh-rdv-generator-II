@@ -31,13 +31,16 @@ def _generate_mapping_df(file_data: bytes, sheet_name: str):
     # Список "псевдонимов" названий колонок
     col_aliases = Config.excel_data_definition.get('col_aliases', dict())
     # "Название колонки в программе": "Название колонки на листе"
-    aliases_list: dict = {}
-    for key, val in col_aliases[sheet_name].items():
-        aliases_list[key.lower().strip()] = val.lower().strip()
+    # aliases_list: dict = {}
+    # for key, val in col_aliases[sheet_name].items():
+    #     aliases_list[key.lower().strip()] = val.lower().strip()
+    #
+    aliases_list = {key.lower().strip(): val.lower().strip() for key, val in col_aliases[sheet_name].items()}
 
-    # Преобразование данных в DataFrame
+    # Преобразование данных в DataFrame.
+    # Читаем со строки с индексом 1 -> вторая строка сверху.
     try:
-        mapping: DataFrame = pd.read_excel(file_data, sheet_name=sheet_name, header=1)
+        mapping: DataFrame = pd.read_excel(io=file_data, sheet_name=sheet_name, header=1)
     except Exception:
         logging.exception("Ошибка преобразования данных в DataFrame")
         raise

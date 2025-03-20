@@ -56,7 +56,8 @@ class TargetTable:
     _ignore_distributed_src: list
     _ignore_hash_fields: list
 
-    def __init__(self, schema: str, table_name: str, comment: str, table_type: str, src_cd: str):
+    def __init__(self, schema: str, table_name: str, comment: str, table_type: str, src_cd: str,
+                 distribution_field_list: list):
 
         TargetTable._ignore_distributed_src = Config.setting_up_field_lists.get('ignore_distributed_src', list())
         TargetTable._ignore_hash_fields = Config.setting_up_field_lists.get('ignore_hash_set', list())
@@ -76,18 +77,22 @@ class TargetTable:
         self.actual_dttm_name = f"{self.src_cd.lower()}_dttm_name"
 
         self.file_name = '.'.join([self.schema, self.table_name])
+        self.distribution_field_list = distribution_field_list
 
-        self.distributed_by = ''
+        if self.distribution_field_list:
+            self.distributed_by = ','.join(distribution_field_list)
 
     def add_field(self, field: DataBaseField):
         self.fields.append(field)
 
-        # Список первичных ключей для опции distributed by
-        if field.name not in TargetTable._ignore_distributed_src and field.is_pk:
-            if self.distributed_by == '':
-                self.distributed_by = field.name
-            else:
-                ','.join([self.distributed_by, field.name])
+        # Список первичных ключей для опции distributed by.
+        # Заполняется только если колонка EXCEL "Distribution_field" - пустая
+        if not self.distribution_field_list:
+            if field.name not in TargetTable._ignore_distributed_src and field.is_pk:
+                if self.distributed_by == '':
+                    self.distributed_by = field.name
+                else:
+                    ','.join([self.distributed_by, field.name])
 
         # Список полей для расчета hash
         if field.name not in TargetTable._ignore_hash_fields and field.is_pk is False:
