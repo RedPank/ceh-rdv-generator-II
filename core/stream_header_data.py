@@ -22,8 +22,6 @@ class StreamHeaderData:
     # Колонка source_name
     source_system: str
     scd_type: str
-    # algo_name: str
-    # data_filtering: str
     distribution_field: str
     distribution_field_list: list
     comment: str
@@ -51,8 +49,6 @@ class StreamHeaderData:
 
         self.source_system = re.sub(r"\s", '', self.row["source_name"]).upper()
         self.scd_type = re.sub(r"\s", '', self.row["scd_type"])
-        # self.algo_name = self.row_dict["algo_name"]
-        # self.data_filtering = self.row_dict["data_filtering"]
         self.distribution_field = self.row["distribution_field"]
         self.distribution_field = self.distribution_field.lower().strip()
         self.distribution_field = re.sub(r"\s", "", self.distribution_field)
