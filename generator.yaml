@@ -134,8 +134,8 @@ setting_up_field_lists:
     - hdp_processed_dttm
     - processed_dttm
 
-  # Список полей, которые НЕ включаются в опцию distributed_by и в multi_fields
-  ignore_distributed_src:
+  # Список полей, которые НЕ включаются в опцию distributed_by, multi_fields, primary_key
+  ignore_primary_key:
     - effective_date
     - effective_dttm
     - effective_from_dttm

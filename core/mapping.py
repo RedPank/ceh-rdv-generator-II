@@ -146,6 +146,9 @@ class MappingMeta:
 
         # Заменяем NaN на пустые строки
         self.mapping_list['version_end'] = self.mapping_list['version_end'].fillna(value="")
+        self.mapping_list['distribution_field'] = self.mapping_list['distribution_field'].fillna(value="")
+        self.mapping_list['comment'] = self.mapping_list['comment'].fillna(value="")
+
 
         # Не берем строки, в которых поле version_end не пустое
         self.mapping_list = self.mapping_list.query("version_end == ''")

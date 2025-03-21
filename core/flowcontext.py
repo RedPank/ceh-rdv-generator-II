@@ -53,13 +53,13 @@ class DataBaseField:
 
 class TargetTable:
 
-    _ignore_distributed_src: list
+    _ignore_primary_key: list
     _ignore_hash_fields: list
 
     def __init__(self, schema: str, table_name: str, comment: str, table_type: str, src_cd: str,
-                 distribution_field_list: list):
+                 distribution_field: str):
 
-        TargetTable._ignore_distributed_src = Config.setting_up_field_lists.get('ignore_distributed_src', list())
+        TargetTable._ignore_primary_key = Config.setting_up_field_lists.get('ignore_primary_key', list())
         TargetTable._ignore_hash_fields = Config.setting_up_field_lists.get('ignore_hash_set', list())
 
         self.fields = []
@@ -68,6 +68,7 @@ class TargetTable:
         self.hub_fields = []
 
         self.distributed_by = ''
+        self.primary_key = ''
 
         self.schema = schema
         self.table_name = table_name
@@ -77,22 +78,19 @@ class TargetTable:
         self.actual_dttm_name = f"{self.src_cd.lower()}_dttm_name"
 
         self.file_name = '.'.join([self.schema, self.table_name])
-        self.distribution_field_list = distribution_field_list
-
-        if self.distribution_field_list:
-            self.distributed_by = ','.join(distribution_field_list)
+        self.distribution_field= distribution_field.lower()
+        self.distributed_by = self.distribution_field
 
     def add_field(self, field: DataBaseField):
         self.fields.append(field)
 
+        if field.name not in TargetTable._ignore_primary_key and field.is_pk:
+            self.primary_key = self.primary_key + ',' + field.name if self.primary_key else field.name
+
         # Список первичных ключей для опции distributed by.
         # Заполняется только если колонка EXCEL "Distribution_field" - пустая
-        if not self.distribution_field_list:
-            if field.name not in TargetTable._ignore_distributed_src and field.is_pk:
-                if self.distributed_by == '':
-                    self.distributed_by = field.name
-                else:
-                    ','.join([self.distributed_by, field.name])
+        if not self.distribution_field:
+            self.distributed_by = self.primary_key
 
         # Список полей для расчета hash
         if field.name not in TargetTable._ignore_hash_fields and field.is_pk is False:
@@ -100,7 +98,7 @@ class TargetTable:
 
         # Список первичных ключей для опции multi_fields.
         # Поля, которые являются ссылками на hub - не включаются
-        if field.is_pk and field.name not in self.hash_fields and field.name not in TargetTable._ignore_distributed_src:
+        if field.is_pk and field.name not in self.hash_fields and field.name not in TargetTable._ignore_primary_key:
             self.multi_fields.append(field.name)
 
 
@@ -382,8 +380,6 @@ class FlowContext:
                 else:
                     self.resource_tags.append('"' +tag + '"')
 
-        # self.resource_tags.append(f'"created": "{datetime.now().strftime("%d %b %Y %H:%M:%S")}"')
-
         # Добавляем строки из файла конфигурации
         cfg_tags = Config.tags
         if type(cfg_tags) is list:
@@ -392,8 +388,6 @@ class FlowContext:
                     self.tags.append('"' + list(tag.keys())[0] + '"' + ':' + '"' + list(tag.values())[0] + '"')
                 else:
                     self.tags.append('"' + tag + '"')
-
-        # self.tags.append(f'"created": "{datetime.now().strftime("%d %b %Y %H:%M:%S")}"')
 
         # Добавляем динамические строки
         self.tags.append('src_cd: ' + self.targets[0].src_cd.upper())

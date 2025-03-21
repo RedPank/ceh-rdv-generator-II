@@ -231,7 +231,7 @@ def mapping_generator(
 
             target_table = TargetTable(schema=sh_data.tgt_schema, table_name=sh_data.tgt_table, comment=sh_data.comment,
                                        table_type=sh_data.target_rdv_object_type, src_cd=src_cd,
-                                       distribution_field_list=sh_data.distribution_field_list)
+                                       distribution_field=sh_data.distribution_field)
             for f_index, f_row in tgt_mapping.iterrows():
                 data_base_field = DataBaseField(name=f_row["tgt_attribute"], data_type=f_row['tgt_attr_datatype'],
                                                 comment=f_row["comment"],
