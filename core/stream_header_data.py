@@ -59,10 +59,8 @@ class StreamHeaderData:
         else:
             self.distribution_field_list = []
 
-
+        # Комментарий к таблице
         self.comment = self.row["comment"]
-        if self.comment is None or self.comment == '' or np.isnan(self.comment):
-            self.comment = f"{self.target_rdv_object_type.upper()}-таблица {self.tgt_full_name}"
 
         # Имя потока без wf_/cf_
         self.base_flow_name = self.flow_name.removeprefix('wf_')

@@ -199,8 +199,9 @@ def mapping_generator(
                      delta_mode=delta_mode, processed_dt=processed_dt, algo=sh_data.algorithm_uid,
                      source_system=sh_data.source_system, source_schema=sh_data.src_schema,
                      source_name=sh_data.src_table,
-                     actual_dttm_name=actual_dttm_name, src_cd=src_cd)
+                     actual_dttm_name=actual_dttm_name, src_cd=src_cd, comment=sh_data.comment)
             )
+
 
             for f_index, f_row in tgt_mapping.iterrows():
                 # mart_field: MartField = (

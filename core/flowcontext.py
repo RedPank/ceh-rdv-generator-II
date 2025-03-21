@@ -270,7 +270,7 @@ class Mart:
 
     def __init__(self, short_name: str, algorithm_uid: str, algorithm_uid_2: str, target: str, source: str,
                  delta_mode: str, processed_dt: str, algo: str, source_system: str, source_schema: str, source_name: str,
-                 actual_dttm_name: str, src_cd: str):
+                 actual_dttm_name: str, src_cd: str, comment: str):
 
         Mart._ignore_field_map_ctx_list = Config.setting_up_field_lists.get('ignore_field_map_ctx_list', dict())
 
@@ -290,6 +290,7 @@ class Mart:
         self.source_name = source_name.lower()
         self.actual_dttm_name = actual_dttm_name.lower()
         self.src_cd = src_cd
+        self.comment = comment
 
 
         # Список полей с описанием, которые БУДУТ добавлены в секцию field_map шаблона wf.yaml
