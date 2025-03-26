@@ -22,7 +22,6 @@ class MainWindow(tk.Tk):
         self.env = Config.env
 
         self.wm_title("Генератор файлов описания src-rdv потока")
-        # self.geometry("500x500")
 
         frame = tk.Frame(
             self,    # Обязательный параметр, который указывает окно для размещения Frame.
@@ -160,3 +159,16 @@ class MainWindow(tk.Tk):
                 msg = "Ошибка чтения шаблона.\nПроверьте журнал работы программы."
                 logging.exception("Ошибка чтения шаблона")
                 showerror(title="Ошибка", message=msg)
+
+            except Exception as err:
+                logging.exception("Обработка данных завершилась из-за необрабатываемой ошибки")
+                print(f"Unexpected {err=}, {type(err)=}")
+
+                msg = ("Во время обработки были ошибки.\n"
+                       "Прочитайте описание ошибок (error) "
+                       "в журнале работы программы!")
+                showerror("Ошибка", msg)
+                logging.info("Обработка завершена с ошибками")
+
+                self.destroy()
+                raise

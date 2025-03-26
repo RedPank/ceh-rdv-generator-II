@@ -1,19 +1,18 @@
+import copy
 import io
+import logging
 import os
+import re
 
 import pandas as pd
 from pandas import DataFrame
 
-from core.exceptions import IncorrectMappingException
+from core.config import Config
 from core.exportdata import ExportData
 from core.flowcontext import FlowContext, Source, Target, Hub, Mart, MartField, MartHub, LocalMetric, TargetTable, \
     DataBaseField
 from core.mapping import MappingMeta
 from core.stream_header_data import StreamHeaderData
-import logging
-from core.config import Config
-import re
-import copy
 
 
 def mapping_generator(
@@ -42,16 +41,25 @@ def mapping_generator(
         with open(file_path, 'rb') as f:
             byte_data = io.BytesIO(f.read())
 
-    except Exception:
+    except Exception as ex:
         msg = f"Ошибка чтения данных из файла {file_path}"
         logging.exception(msg)
-        raise IncorrectMappingException(msg)
+        Config.is_error = True
+        raise ex
 
     # Данные EXCEL
     mapping_meta = MappingMeta(byte_data)
 
     # Цикл по списку потоков
     flow_list = mapping_meta.mapping_list['flow_name'].unique()
+
+    if len(flow_list) == 0:
+        logging.warning("Ни один из потоков не будет сформирован, т.к. не найдено соответствие имени потока шаблонам")
+        logging.warning("Проверьте список шаблонов в секции 'wf_templates_list' в файле конфигурации")
+        logging.info('')
+        Config.is_warning = True
+        return
+
     for wrk_index in range(len(flow_list)):
 
         flow_name = flow_list[wrk_index]
