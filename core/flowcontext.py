@@ -184,13 +184,16 @@ class MartField:
         tgt_field:str = str(row["tgt_attribute"]).strip().lower()
         tgt_field_type:str = str(row["tgt_attr_datatype"]).strip().lower()
         expression: str = str(row["expression"]).strip().removeprefix('=')
+        not_null:bool = str(row["tgt_attr_mandatory"]).strip().lower() == 'not null'
+        is_pk:bool = str(row["_pk"]).strip().lower() == 'pk'
+
         value = src_attr
 
         if expression:
             value_type = "sql_expression"
             expression = expression + ' :: ' + tgt_field_type.upper()
 
-        elif src_attr_datatype in ["string"] and tgt_field_type in ["text"]:
+        elif src_attr_datatype in ["string"] and tgt_field_type in ["text"] and not is_pk:
             value_type = "sql_expression"
             expression = f"case when {src_attr} = '' then Null else {src_attr} end"  + ' :: ' + tgt_field_type.upper()
 

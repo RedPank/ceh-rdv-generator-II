@@ -42,9 +42,14 @@ class StreamHeaderData:
 
         self.target_rdv_object_type = re.sub(r"\s", '', self.row["target_rdv_object_type"]).upper()
 
-        self.src_full_name = re.sub(r"\s", '', self.row["src_table"])
-        self.src_schema = self.src_full_name.split('.')[0]
-        self.src_table = self.src_full_name.split('.')[1]
+        self.src_full_name: str = re.sub(r"\s", '', self.row["src_table"])
+        if self.src_full_name.find(".") > 0:
+            self.src_schema = self.src_full_name.split('.')[0]
+            self.src_table = self.src_full_name.split('.')[1]
+        else:
+            self.src_schema = ''
+            self.src_table = self.src_full_name
+
         self.src_resource_cd = '???'
 
         self.source_system = re.sub(r"\s", '', self.row["source_name"]).upper()
