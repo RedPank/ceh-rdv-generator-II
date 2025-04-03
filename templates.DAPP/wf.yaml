@@ -1,7 +1,7 @@
 # Created {{ ctx.created }}
 name: {{ ctx.flow_name }}
 type: WORK_FLOW
-schema_version: '1.16'
+schema_version: '1.14'
 version: 1
 tags:
     {%- for tag in ctx.tags %}
@@ -35,16 +35,15 @@ targets:
   - short_name: {{ hub.short_name }}
     schema: {{ hub.schema }}
     table: {{ hub.hub_target }}
-    resource_cd: ceh.{{ hub.resource_cd }}
+    resource_cd: {{ hub.resource_cd }}
 {% endfor -%}
 
 local_metrics:
-{%- for local_metric in ctx.local_metrics %}
+{% set local_metric = ctx.local_metrics|first()%}
   wf_dataset_max_date_to:
     target: stage_T_input
     query: max(date_trunc('{{ local_metric.processed_dt_conversion }}', {{ local_metric.processed_dt }}))
-    on_null: .conf.algos."{{ local_metric.algo }}".by_src."{{ local_metric.system }}.{{ local_metric.schema }}.{{ local_metric.name }}".wf_dataset_max_date_to
-{%- endfor %}
+    on_null: .conf.algos[.this_algo_uid].by_src[.this_source_cd].wf_dataset_max_date_to
 
 mappings:
   marts:
@@ -75,7 +74,8 @@ mappings:
         {{ field.tgt_field }}:
           type: {{field.value_type}}
           {%- if field.value_type == "sql_expression" %} 
-          value: {{ field.expression }}     
+          value: |
+            {{ field.expression }}     
           {%- else %}          
           value: {{ field.value }}
           {%- endif %}          
@@ -87,7 +87,7 @@ mappings:
       hub_map:
         {%- for hub in mart.mart_hub_list %}
         - rk_field: {{ hub.rk_field }} 
-          target: {{ hub.hub_target }}
+          target: {{ hub.short_name }}
           business_key_schema: {{ hub.business_key_schema }}
           on_full_null: {{ hub.on_full_null }}
           field_map:

@@ -7,6 +7,7 @@ import re
 import pandas as pd
 from pandas import DataFrame
 
+from core import mapping
 from core.config import Config
 from core.exportdata import ExportData
 from core.flowcontext import FlowContext, Source, Target, Hub, Mart, MartField, MartHub, LocalMetric, TargetTable, \
@@ -149,6 +150,17 @@ def mapping_generator(
                             src_cd=src_cd, data_capture_mode=Config.data_capture_mode)
 
             src_mapping = mapping_meta.get_mapping_by_src_table(src_table=sh_data.src_full_name)
+            # Список полей - дубликатов в источнике
+            dupl = mapping.get_duplicate_list(df=src_mapping, field_name='src_attribute')
+
+            if len( dupl ) > 0:
+                logging.warning(f"В таблице-источнике {sh_data.src_full_name} указаны повторяющиеся названия полей")
+                logging.warning(str(dupl))
+                logging.warning('При формировании файла описания источника дубликаты будут удалены')
+                Config.is_warning = True
+
+            # Удаляем дубликаты при формировании описания внешней таблицы
+            src_mapping = src_mapping.drop_duplicates(subset=['src_attribute'], keep='first')
             for s_index, s_row in src_mapping.iterrows():
                 source.add_field(DataBaseField(name=s_row['src_attribute'], data_type=s_row['src_attr_datatype'],
                                                comment=s_row['comment'], is_nullable=False, is_pk=s_row['src_pk']))
@@ -159,7 +171,7 @@ def mapping_generator(
                                     resource_cd=sh_data.tgt_resource_cd, src_cd=src_cd.lower())
             # Список хабов
             hubs: pd.DataFrame = tgt_mapping[tgt_mapping['attr:conversion_type'] == 'hub']
-            hubs = hubs[['tgt_attribute', 'attr:bk_schema', 'attr:bk_object', 'attr:nulldefault', 'src_attribute',
+            hubs = hubs[['tgt_attribute', 'attr:bk_schema', 'attr:bk_object', 'attr_nulldefault', 'src_attribute',
                        'expression', 'tgt_pk', 'tgt_attr_datatype', '_pk', 'src_attr_datatype', 'tgt_attr_mandatory']]
 
             pattern_bk_schema: str = Config.get_regexp('bk_schema_regexp')
@@ -220,7 +232,7 @@ def mapping_generator(
 
                 mart_hub = MartHub(rk_field=h_row['tgt_attribute'], hub_target=h_row['attr:bk_object'].split('.')[1],
                                    business_key_schema=h_row['attr:bk_schema'],
-                                   on_full_null=h_row['attr:nulldefault'], src_attribute=h_row['src_attribute'],
+                                   on_full_null=h_row['attr_nulldefault'], src_attribute=h_row['src_attribute'],
                                    src_type=h_row['src_attr_datatype'], expression=h_row['expression'],
                                    field_type=h_row['tgt_attr_datatype'],
                                    is_bk=h_row['_pk'] == 'pk', schema=h_row['attr:bk_object'].split('.')[0])

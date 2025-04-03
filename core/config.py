@@ -105,7 +105,7 @@ class Config:
         print(Config.log_viewer)
 
     @staticmethod
-    def get_regexp(name: str) -> str:
+    def get_regexp(name: str, default=None) -> str:
         """
         Возвращает регулярное выражение, которое зарегистрировано в конфигурационном файле под указанным именем.
         В случае отсутствия указанного имени возбуждается исключение IncorrectConfigException.
@@ -113,10 +113,14 @@ class Config:
             name: Имя регулярного выражения.
 
         Returns: Регулярное выражение в виде строки.
+        :param name: Имя параметра
+        :param default: Значение параметра "по умолчанию"
 
         """
-        if name in Config.config:
-            return Config.config.get(name)
+        if name in Config.config["regexp"]:
+            return Config.config["regexp"].get(name)
+        elif default is not None:
+            return default
         else:
             logging.error(f'В файле конфигурации не найден шаблон с именем "{name}"')
             raise IncorrectConfigException()

@@ -184,7 +184,7 @@ class MartField:
         tgt_field:str = str(row["tgt_attribute"]).strip().lower()
         tgt_field_type:str = str(row["tgt_attr_datatype"]).strip().lower()
         expression: str = str(row["expression"]).strip().removeprefix('=')
-        not_null:bool = str(row["tgt_attr_mandatory"]).strip().lower() == 'not null'
+        # not_null:bool = str(row["tgt_attr_mandatory"]).strip().lower() == 'not null'
         is_pk:bool = str(row["_pk"]).strip().lower() == 'pk'
 
         value = src_attr
@@ -249,6 +249,7 @@ class MartHub:
         self.id_field = self.rk_field.removesuffix('_rk') + '_id'
 
         self.business_key_schema = business_key_schema
+        self.bk_schema_name = business_key_schema
         self.on_full_null = on_full_null
         self.src_attribute = src_attribute
         self.expression = expression if type(expression) is str else ''
@@ -360,6 +361,12 @@ class FlowContext:
         self.sources.append(source)
 
     def add_target(self, target: Target):
+        # if (source.data_capture_mode == 'increment' and not
+        #         [ src.name for src in source.fields if src.name == 'deleted_flg']):
+        #     logging.warning(f'В описании таблицы "{source.table}" отсутствует поле "deleted_flg"')
+        #     Config.is_warning = True
+
+
         self.targets.append(target)
 
     def add_local_metric(self, local_metric: LocalMetric):
@@ -367,7 +374,6 @@ class FlowContext:
 
     def add_mart(self, mart: Mart):
         self.marts.append(mart)
-
         # Формируем уникальный список хабов потока
         for hub in mart.mart_hub_list:
             if not [True for ctx in self.hubs if ctx.full_table_name == hub.full_table_name]:
@@ -380,37 +386,37 @@ class FlowContext:
         if type(cfg_tags) is list:
             for tag in cfg_tags:
                 if type(tag) is dict:
-                    self.resource_tags.append('"' + list(tag.keys())[0] + '"' + ':' + '"' + list(tag.values())[0]+ '"')
+                    self.resource_tags.append("'" + list(tag.keys())[0] + ':' + list(tag.values())[0] + "'")
                 else:
-                    self.resource_tags.append('"' +tag + '"')
+                    self.resource_tags.append("'" + tag + "'")
 
         # Добавляем строки из файла конфигурации
         cfg_tags = Config.tags
         if type(cfg_tags) is list:
             for tag in cfg_tags:
                 if type(tag) is dict:
-                    self.tags.append('"' + list(tag.keys())[0] + '"' + ':' + '"' + list(tag.values())[0] + '"')
+                    self.tags.append("'" + list(tag.keys())[0] + ':' + list(tag.values())[0] + "'")
                 else:
-                    self.tags.append('"' + tag + '"')
+                    self.tags.append("'" + tag + "'")
 
         # Добавляем динамические строки
-        self.tags.append('src_cd: ' + self.targets[0].src_cd.upper())
-        self.tags.append('prv: ' + self.sources[0].system)
-        self.tags.append('tgt: ' + self.targets[0].schema)
-        self.tags.append('cf_' + self.base_flow_name)
-        self.tags.append('wf_' + self.base_flow_name)
+        self.tags.append("'src_cd:" + self.targets[0].src_cd.upper() + "'")
+        self.tags.append("'prv:" + self.sources[0].system + "'")
+        self.tags.append("'tgt:" + self.targets[0].schema + "'")
+        self.tags.append("'cf_" + self.base_flow_name + "'")
+        self.tags.append("'wf_" + self.base_flow_name + "'")
 
         # Источники
         for src in self.sources:
-            self.tags.append('src_tbl: ' + src.schema + '.' + src.table)
+            self.tags.append("'src_tbl:" + src.schema + "." + src.table + "'")
         # Алгоритм
         for src in self.sources:
-            self.tags.append('UID: ' + src.algorithm_uid)
+            self.tags.append("'UID:" + src.algorithm_uid + "'")
 
         # Целевая таблица
         for tgt in self.targets:
-            if tgt.table.startswith('mart_'):
-                self.tags.append('tgt_tbl: ' + tgt.table)
+            if tgt.table.startswith("'mart_"):
+                self.tags.append("'tgt_tbl:" + tgt.table + "'")
 
 
     def add_target_table(self, target_table: TargetTable):

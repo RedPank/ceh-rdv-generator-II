@@ -35,9 +35,10 @@ anchor_area: &area
 # символов ^ - символ начала строки и $ - символ окончания строки.
 #  Пример: - "^wf_app_savc_dapp_rdv_savcsa_depositparticipant$"
 wf_templates_list:
+  - "^wf_serv_boop_dapp_rdv_mart_loyaltyretailprofile$"
 #  - ".+"
 #  - "wf_app_savc_dapp_rdv_mart_payment_savcsa_rtldpstmntransfernstrctn_savc"
-  - "^wf_app_savc_dapp_rdv_savcsa_depositparticipant$"
+#  - "^wf_app_savc_dapp_rdv_savcsa_depositparticipant$"
 #  - "wf_app_mssa_dapp_rdv_mart_product_additional_service"
 #  - "wf_app_mssa_dapp_rdv_mart_application_product_insurance"
 
@@ -50,7 +51,7 @@ out_path: "C:\\Projects\\rdv"
 
 # Имя файла EXCEL с маппингом потоков дял отображения в диалог выбора.
 # В диалоге можно выбрать любой другой файл маппинга для обработки.
-excel_file: "C:\\Projects\\rdv\\Маппинг_ЦЕХ_RDV_SAVC_v7.0.xlsx"
+excel_file: "C:\\Projects\\rdv\\Маппинг_ЦЕХ_RDV_BOOP_v2.1_old.xlsx"
 
 # Ссылка на каталог с шаблонами.
 # По умолчанию шаблоны берутся из каталога templates, который находится "рядом" с main.py
@@ -95,21 +96,23 @@ resource_tags:
   - area: *area
 
 ### Шаблоны для проверки имен/названий #################################################################################
-
-# Шаблон Кода источника
-src_cd_regexp: "^={0,1}'([A-Z_]+)'$"
-# Шаблон названия поля в таблице-источнике
-src_attr_name_regexp: "^[a-zA-Z][a-zA-Z0-9_\\$]*$"
-# Шаблон названия поля в целевой таблице
-tgt_attr_name_regexp: "^[a-zA-Z][a-zA-Z0-9_]{0,61}$"
-# Шаблон названия таблицы-источника
-src_table_name_regexp: "^[a-zA-Z][a-zA-Z0-9_]*\\.[a-zA-Z][a-zA-Z0-9_]*$"
-# Шаблон названия целевой-таблицы
-tgt_table_name_regexp: "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
-# Шаблон названия БК-схемы
-bk_schema_regexp: "^[a-zA-Z][a-zA-Z0-9_-]*$"
-# Название таблицы из колонки Attr:BK_Object
-bk_object_regexp: "^([a-z][a-z0-9_]*)(\\.[a-z][a-z0-9_]*)(\\.[a-z][a-z0-9_]*){0,1}$"
+regexp:
+  # Шаблон Кода источника
+  src_cd_regexp: "^={0,1}'([A-Z_]+)'$"
+  # Шаблон названия поля в таблице-источнике
+  src_attr_name_regexp: "^[a-zA-Z][a-zA-Z0-9_\\$]*$"
+  # Шаблон названия поля в целевой таблице
+  tgt_attr_name_regexp: "^[a-zA-Z][a-zA-Z0-9_]{0,61}$"
+  # Шаблон названия таблицы-источника
+  src_table_name_regexp: "^[a-zA-Z][a-zA-Z0-9_]*\\.[a-zA-Z][a-zA-Z0-9_]*$"
+  # Шаблон названия целевой-таблицы
+  tgt_table_name_regexp: "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+  # Шаблон названия БК-схемы
+  bk_schema_regexp: "^[a-zA-Z][a-zA-Z0-9_-]*$"
+  # Название таблицы из колонки Attr:BK_Object
+  bk_object_regexp: "^([a-z][a-z0-9_]*)(\\.[a-z][a-z0-9_]*)(\\.[a-z][a-z0-9_]*){0,1}$"
+  # Список возможных значений поля attr:nulldefault для хабов
+  hub_nulldefault: "^(new_rk|good_default|delete_record)$"
 
 ########################################################################################################################
 
@@ -175,15 +178,16 @@ setting_up_field_lists:
 #      value: decode(upper(op_type), 'DELETE', true, false)
 #      field_type: BOOLEAN
 
-  # Определение поля даты в таблице-источнике по которому будет выполняться фильтрация новых записей.
-  # Используется в шаблоне wf.yaml.
-  processed_dt: commit_ts
-  # Отсечение даты: microseconds,milliseconds,second,minute,hour,day,week,month,quarter,year,decade,,centurymillennium
-  processed_dt_conversion: second
+
+# Определение поля даты в таблице-источнике по которому будет выполняться фильтрация новых записей.
+# Используется в шаблоне wf.yaml.
+processed_dt: commit_ts
+# Отсечение даты: microseconds,milliseconds,second,minute,hour,day,week,month,quarter,year,decade,,centurymillennium
+processed_dt_conversion: second
  
-  # Поле "историчности" в целевой таблице (поле history_field в шаблоне mart.yaml)	 
-  # Применять с осторожностью. Алгоритм обработки этого параметра фреймом мне неизвестен.
-  # tgt_history_field: effective_dttm
+# Поле "историчности" в целевой таблице (поле history_field в шаблоне mart.yaml)
+# Применять с осторожностью. Алгоритм обработки этого параметра фреймом мне неизвестен.
+# tgt_history_field: effective_dttm
 
 # Настройки состава/типа/названия полей
 field_type_list:
@@ -262,7 +266,7 @@ excel_data_definition:
       - 'Attr:Conversion_type'
       - 'Attr:BK_Schema'
       - 'Attr:BK_Object'
-      - 'Attr:nulldefault'
+      - 'Attr_nulldefault'
     'Перечень загрузок Src-RDV':
       - 'algorithm_uid'
       - 'subalgorithm_uid'
@@ -288,10 +292,10 @@ excel_data_definition:
       'comment': 'Src_attr_desc'
       'tgt_attribute': 'Tgt_attr'
       'src_attribute': 'src_attr'
+      'attr_nulldefault': 'attr:nulldefault'
 
     'Перечень загрузок Src-RDV':
       'Algorithm_UID': 'UID'
       'subalgorithm_uid': 'Sub_UID'
       'tgt_table': 'Target_table'
-#      'target_rdv_object_type': 'Trarget_DV_Object_Type'
       'src_table': 'Source_table'

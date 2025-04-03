@@ -24,17 +24,13 @@ def _generate_mapping_df(file_data: bytes, sheet_name: str):
         Объект с типом DataFrame.
     """
 
-    # Список имен колонок в программе
+    # Список имен колонок из файла настроек
     columns = Config.excel_data_definition.get('columns', dict())
+    # Список колонок в нижнем регистре из файла настроек для листа EXCEL
     columns_list: list[str] = [col_name.lower().strip() for col_name in columns[sheet_name]]
 
-    # Список "псевдонимов" названий колонок
+    # Список "псевдонимов" названий колонок из файла настроек
     col_aliases = Config.excel_data_definition.get('col_aliases', dict())
-    # "Название колонки в программе": "Название колонки на листе"
-    # aliases_list: dict = {}
-    # for key, val in col_aliases[sheet_name].items():
-    #     aliases_list[key.lower().strip()] = val.lower().strip()
-    #
     aliases_list = {key.lower().strip(): val.lower().strip() for key, val in col_aliases[sheet_name].items()}
 
     # Преобразование данных в DataFrame.
@@ -52,9 +48,12 @@ def _generate_mapping_df(file_data: bytes, sheet_name: str):
 
     # Проверка полученных данных
     error: bool = False
+
     # Находим соответствие между "Названием колонки в программе" и "Названием колонки на листе"
+    # Цикл по списку колонок из конфигурационного файла
     for col_name in columns_list:
-        if not (col_name in mapping.columns.values):
+
+        if not col_name in mapping.columns.values:
 
             alias: str | None = aliases_list.get(col_name, None)
             if alias and alias in mapping.columns.values:
@@ -90,7 +89,7 @@ def _is_duplicate(df: pd.DataFrame, field_name: str) -> bool:
     return True in df[field_name.lower()].dropna(how='all').duplicated()
 
 
-def _get_duplicate_list(df: pd.DataFrame, field_name: str) -> list | None:
+def get_duplicate_list(df: pd.DataFrame, field_name: str) -> list | None:
     """
     Проверяет колонку DataFrame на наличие не пустых дубликатов
 
@@ -102,12 +101,8 @@ def _get_duplicate_list(df: pd.DataFrame, field_name: str) -> list | None:
         object: None, если нет дубликатов или список дубликатов
     """
 
-    dupl = df[~df[field_name.lower()].dropna().duplicated()].tolist()
-
-    if len(dupl) > 0:
-        return dupl
-
-    return None
+    dupl = df[field_name].loc[df[field_name].dropna().duplicated()].unique().tolist()
+    return dupl
 
 
 class MappingMeta:
@@ -214,6 +209,23 @@ class MappingMeta:
         self.mapping_df['comment'] = self.mapping_df['comment'].fillna(value="")
         self.mapping_df['comment'] = self.mapping_df['comment'].str.strip()
 
+        self.mapping_df['attr:conversion_type'] = self.mapping_df['attr:conversion_type'].fillna(value="")
+        self.mapping_df['attr:conversion_type'] = self.mapping_df['attr:conversion_type'].str.strip()
+
+        self.mapping_df['attr_nulldefault'] = self.mapping_df['attr_nulldefault'].fillna(value="")
+        self.mapping_df['attr_nulldefault'] = self.mapping_df['attr_nulldefault'].str.strip()
+
+        # pattern="^(new_rk|good_default|delete_record)$"
+        pattern = Config.get_regexp(name="hub_nulldefault", default="^(new_rk|good_default|delete_record)$")
+        # For columns with spaces in their name, you can use backtick quoting.
+        err_rows = self.mapping_df.query(f"`attr:conversion_type` == 'hub' and attr_nulldefault != '' and "
+                                         f"not attr_nulldefault.str.match('{pattern}')")
+
+        if len(err_rows) > 0:
+            logging.error(f"Значение в поле 'attr:nulldefault' не соответствует шаблону: '{pattern}'")
+            logging.error('\n' +
+                          str(err_rows[['tgt_table', 'tgt_attribute', 'tgt_attr_datatype', 'attr_nulldefault']]))
+            is_error = True
 
         # Проверяем состав поля 'tgt_pk'
         err_rows: pd.DataFrame = self.mapping_df[~self.mapping_df['tgt_pk'].apply(test_tgt_pk)]
