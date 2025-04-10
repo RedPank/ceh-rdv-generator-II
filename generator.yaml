@@ -35,8 +35,8 @@ anchor_area: &area
 # символов ^ - символ начала строки и $ - символ окончания строки.
 #  Пример: - "^wf_app_savc_dapp_rdv_savcsa_depositparticipant$"
 wf_templates_list:
-  - "^wf_serv_boop_dapp_rdv_mart_loyaltyretailprofile$"
-#  - ".+"
+#  - "^wf_serv_boop_dapp_rdv_mart_loyaltyretailprofile$"
+  - ".+"
 #  - "wf_app_savc_dapp_rdv_mart_payment_savcsa_rtldpstmntransfernstrctn_savc"
 #  - "^wf_app_savc_dapp_rdv_savcsa_depositparticipant$"
 #  - "wf_app_mssa_dapp_rdv_mart_product_additional_service"
@@ -51,7 +51,8 @@ out_path: "C:\\Projects\\rdv"
 
 # Имя файла EXCEL с маппингом потоков дял отображения в диалог выбора.
 # В диалоге можно выбрать любой другой файл маппинга для обработки.
-excel_file: "C:\\Projects\\rdv\\Маппинг_ЦЕХ_RDV_BOOP_v2.1_old.xlsx"
+excel_file: "C:\\Projects\\rdv\\Маппинг_ЦЕХ_RDV_SAVC_v8.0_ (1).xlsx"
+
 
 # Ссылка на каталог с шаблонами.
 # По умолчанию шаблоны берутся из каталога templates, который находится "рядом" с main.py
@@ -61,15 +62,26 @@ templates: "C:\\GitHub\\ceh-rdv-generator-II\\templates.DAPP"
 # Первая строка содержит имя (полный путь) вызываемого редактора.
 # Следующие строки содержат параметры для вызываемого редактора.
 log_viewer:
+# Far
   - "C:\\Program Files\\Notepad++\\notepad++.exe"
   - "-ro"
   - "{log_file}"
+
+# Visual Studio Code
+#  - "C:\\Users\\ablagov\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+#  - "-r"
+#  - "{log_file}"
 
 # Файл журнала. Если не задавать "полный" путь, то файл будет сформирован в каталоге из параметра out_path
 log_file: "generator.log"
 
 delta_mode: "new"
 data_capture_mode: "increment"
+
+# Добавляет в журнальный файл esc-последовательности для выделения цветом сообщений разных уровней.
+# Требуется внешний редактор распознающий esc-последовательности для просмотра.
+# Для Visual Studio Code раскраска не нужна
+colorlog: False
 
 ########################################################################################################################
 
@@ -100,11 +112,11 @@ regexp:
   # Шаблон Кода источника
   src_cd_regexp: "^={0,1}'([A-Z_]+)'$"
   # Шаблон названия поля в таблице-источнике
-  src_attr_name_regexp: "^[a-zA-Z][a-zA-Z0-9_\\$]*$"
+  src_attr_name_regexp: "^[a-z][a-z0-9_\\$]*$"
   # Шаблон названия поля в целевой таблице
-  tgt_attr_name_regexp: "^[a-zA-Z][a-zA-Z0-9_]{0,61}$"
+  tgt_attr_name_regexp: "^[a-z][a-z0-9_]{0,61}$"
   # Шаблон названия таблицы-источника
-  src_table_name_regexp: "^[a-zA-Z][a-zA-Z0-9_]*\\.[a-zA-Z][a-zA-Z0-9_]*$"
+  src_table_name_regexp: "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
   # Шаблон названия целевой-таблицы
   tgt_table_name_regexp: "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
   # Шаблон названия БК-схемы

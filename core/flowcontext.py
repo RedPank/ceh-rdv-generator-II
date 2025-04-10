@@ -142,7 +142,7 @@ class Hub:
 
 class Target:
 
-    def __init__(self, schema: str, table: str, resource_cd: str, src_cd: str):
+    def __init__(self, schema: str, table: str, resource_cd: str, src_cd: str, object_type: str):
 
         self.hubs = []
 
@@ -151,6 +151,7 @@ class Target:
         self.resource_cd = resource_cd
         self.short_name = create_short_name(name=self.table, short_name_len=22, random_str_len=6)
         self.src_cd = src_cd
+        self.object_type = object_type
 
     def add_hub(self, hub: Hub):
         self.hubs.append(hub)
@@ -274,17 +275,19 @@ class Mart:
 
     def __init__(self, short_name: str, algorithm_uid: str, algorithm_uid_2: str, target: str, source: str,
                  delta_mode: str, processed_dt: str, algo: str, source_system: str, source_schema: str, source_name: str,
+                 table_name: str,
                  actual_dttm_name: str, src_cd: str, comment: str):
 
         Mart._ignore_field_map_ctx_list = Config.setting_up_field_lists.get('ignore_field_map_ctx_list', dict())
 
-        self.fields_map = []
+        self.fields = []
         self.mart_hub_list = []
 
         self.short_name = short_name
         self.algorithm_uid = algorithm_uid
         self.algorithm_uid_2 = algorithm_uid_2
         self.target = target
+        self.table_name = table_name
         self.source = source
         self.delta_mode = delta_mode
         self.processed_dt = processed_dt
@@ -306,20 +309,20 @@ class Mart:
                 fld = add_field_map_ctx_lis[tgt_field]
                 mart_field = MartField(tgt_field=tgt_field, value_type=fld.type, value=fld.value,
                                        tgt_field_type=fld.field_type.upper(), expression="")
-                self.add_fields_map(mart_field)
+                self.add_fields(mart_field)
 
-    def add_fields_map(self, mart_field: MartField):
+    def add_fields(self, mart_field: MartField):
 
         #  Не добавляем поля из списка "ignore_field_map_ctx_list"
         if mart_field.tgt_field in Mart._ignore_field_map_ctx_list:
             return
 
         # Проверяем, если поле уже присутствует, то выдается ошибка
-        if [ctx.tgt_field for ctx in self.fields_map if ctx.tgt_field == mart_field.tgt_field]:
+        if [ctx.tgt_field for ctx in self.fields if ctx.tgt_field == mart_field.tgt_field]:
             msg = f'Поле "{mart_field.tgt_field}" уже присутствует в списке полей'
             raise IncorrectMappingException(msg)
 
-        self.fields_map.append(mart_field)
+        self.fields.append(mart_field)
 
     def add_mart_hub_list(self, mart_hub: MartHub):
         mart_hub.actual_dttm_name = self.actual_dttm_name
@@ -361,11 +364,6 @@ class FlowContext:
         self.sources.append(source)
 
     def add_target(self, target: Target):
-        # if (source.data_capture_mode == 'increment' and not
-        #         [ src.name for src in source.fields if src.name == 'deleted_flg']):
-        #     logging.warning(f'В описании таблицы "{source.table}" отсутствует поле "deleted_flg"')
-        #     Config.is_warning = True
-
 
         self.targets.append(target)
 
@@ -400,8 +398,8 @@ class FlowContext:
                     self.tags.append("'" + tag + "'")
 
         # Добавляем динамические строки
-        self.tags.append("'src_cd:" + self.targets[0].src_cd.upper() + "'")
         self.tags.append("'prv:" + self.sources[0].system + "'")
+        self.tags.append("'src:" + self.targets[0].src_cd.upper() + "'")
         self.tags.append("'tgt:" + self.targets[0].schema + "'")
         self.tags.append("'cf_" + self.base_flow_name + "'")
         self.tags.append("'wf_" + self.base_flow_name + "'")

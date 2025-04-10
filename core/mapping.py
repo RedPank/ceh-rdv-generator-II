@@ -89,21 +89,43 @@ def _is_duplicate(df: pd.DataFrame, field_name: str) -> bool:
     return True in df[field_name.lower()].dropna(how='all').duplicated()
 
 
-def get_duplicate_list(df: pd.DataFrame, field_name: str) -> list | None:
+def get_duplicate_list(df: pd.DataFrame, column_name: str) -> list | None:
     """
-    Проверяет колонку DataFrame на наличие не пустых дубликатов
+    Проверяет колонку field_name в df на наличие не пустых дубликатов
 
     Args:
         df: Объект DataFrame, в котором выполняется поиск дубликатов.
-        field_name: Имя поля в DataFrame, для которого выполняется поиск.
+        column_name: Имя колонки в DataFrame, для которой выполняется поиск.
 
     Returns:
-        object: None, если нет дубликатов или список дубликатов
+        object: Список дубликатов, уникальный
     """
 
-    dupl = df[field_name].loc[df[field_name].dropna().duplicated()].unique().tolist()
+    dupl = df[column_name].loc[df[column_name].dropna().duplicated()].unique().tolist()
     return dupl
 
+
+def get_duplicat_df(df: pd.DataFrame, column_name: str, columns: list=None) -> DataFrame:
+    """
+    Проверяет объект df на наличие не пустых дубликатов в колонке field_name
+
+    Args:
+        df: Объект DataFrame, в котором выполняется поиск дубликатов.
+        column_name: Имя поля в DataFrame, для которого выполняется поиск.
+        columns: Список колонок, которые будут возвращены из df.
+
+    Returns:
+        object: Объект DataFrame со списком колонок [columns], содержащий строки в которых обнаружены дубликаты.
+    """
+
+    if columns is None or len(columns) == 0:
+        columns = [column_name]
+    elif not column_name in columns:
+        columns.append(column_name)
+
+    dupl = df[columns].loc[df[column_name].dropna().duplicated()]
+
+    return dupl
 
 class MappingMeta:
     # Данные листа 'Детали загрузок Src-RDV'
@@ -182,40 +204,27 @@ class MappingMeta:
         self.mapping_df = self.mapping_df.query(f"tgt_table in {self._tgt_tables_list}")
 
         # Преобразуем значения в "нужный" регистр
-        self.mapping_df['src_attribute'] = self.mapping_df['src_attribute'].fillna(value="")
-        self.mapping_df['src_attribute'] = self.mapping_df['src_attribute'].str.lower()
-        self.mapping_df['src_attribute'] = self.mapping_df['src_attribute'].str.strip()
+        self.mapping_df['src_attribute'] = self.mapping_df['src_attribute'].fillna(value="").str.strip().str.lower()
 
-        self.mapping_df['src_attr_datatype'] = self.mapping_df['src_attr_datatype'].fillna(value="")
-        self.mapping_df['src_attr_datatype'] = self.mapping_df['src_attr_datatype'].str.lower()
-        self.mapping_df['src_attr_datatype'] = self.mapping_df['src_attr_datatype'].str.strip()
+        self.mapping_df['src_attr_datatype'] = self.mapping_df['src_attr_datatype'].fillna(value="").str.strip().str.lower()
 
-        self.mapping_df['expression'] = self.mapping_df['expression'].fillna(value="")
-        self.mapping_df['expression'] = self.mapping_df['expression'].str.strip()
+        self.mapping_df['expression'] = self.mapping_df['expression'].fillna(value="").str.strip()
 
-        self.mapping_df['tgt_attribute'] = self.mapping_df['tgt_attribute'].fillna(value="")
-        self.mapping_df['tgt_attribute'] = self.mapping_df['tgt_attribute'].str.lower()
-        self.mapping_df['tgt_attribute'] = self.mapping_df['tgt_attribute'].str.strip()
+        self.mapping_df['tgt_attribute'] = self.mapping_df['tgt_attribute'].fillna(value="").str.strip().str.lower()
 
-        self.mapping_df['tgt_attr_datatype'] = self.mapping_df['tgt_attr_datatype'].fillna(value="")
-        self.mapping_df['tgt_attr_datatype'] = self.mapping_df['tgt_attr_datatype'].str.lower()
-        self.mapping_df['tgt_attr_datatype'] = self.mapping_df['tgt_attr_datatype'].str.strip()
+        self.mapping_df['tgt_attr_datatype'] = self.mapping_df['tgt_attr_datatype'].fillna(value="").str.strip().str.lower()
 
         # Заменяем значения NaN на пустые строки, что-бы дальше "не мучится"
-        self.mapping_df['tgt_pk'] = self.mapping_df['tgt_pk'].fillna(value="")
-        self.mapping_df['tgt_pk'] = self.mapping_df['tgt_pk'].str.lower()
-        self.mapping_df['tgt_pk'] = self.mapping_df['tgt_pk'].str.strip()
+        self.mapping_df['tgt_pk'] = self.mapping_df['tgt_pk'].fillna(value="").str.strip().str.lower()
 
-        self.mapping_df['comment'] = self.mapping_df['comment'].fillna(value="")
-        self.mapping_df['comment'] = self.mapping_df['comment'].str.strip()
+        self.mapping_df['comment'] = self.mapping_df['comment'].fillna(value="").str.strip()
 
-        self.mapping_df['attr:conversion_type'] = self.mapping_df['attr:conversion_type'].fillna(value="")
-        self.mapping_df['attr:conversion_type'] = self.mapping_df['attr:conversion_type'].str.strip()
+        self.mapping_df['attr:conversion_type'] = self.mapping_df['attr:conversion_type'].fillna(value="").str.strip()
 
-        self.mapping_df['attr_nulldefault'] = self.mapping_df['attr_nulldefault'].fillna(value="")
-        self.mapping_df['attr_nulldefault'] = self.mapping_df['attr_nulldefault'].str.strip()
+        self.mapping_df['attr_nulldefault'] = self.mapping_df['attr_nulldefault'].fillna(value="").str.strip()
 
-        # pattern="^(new_rk|good_default|delete_record)$"
+        # Поле attr:nulldefault переименовано в attr_nulldefault для того, что-бы избежать ошибок внутри query()
+        # Экранировать "обратной кавычкой" получается только одно поле
         pattern = Config.get_regexp(name="hub_nulldefault", default="^(new_rk|good_default|delete_record)$")
         # For columns with spaces in their name, you can use backtick quoting.
         err_rows = self.mapping_df.query(f"`attr:conversion_type` == 'hub' and attr_nulldefault != '' and "

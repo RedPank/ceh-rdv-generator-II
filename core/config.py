@@ -32,6 +32,7 @@ class Config:
     config_file: str
     is_warning: bool = False
     is_error: bool = False
+    colorlog: bool = False
 
     @staticmethod
     def load_config(config_name: str):
@@ -65,6 +66,8 @@ class Config:
 
         Config.data_capture_mode = Config.config.get('data_capture_mode', 'increment')
         Config.delta_mode = Config.config.get('delta_mode', 'new')
+
+        Config.colorlog = Config.config.get('colorlog', False)
 
                 # "Загрузка" файлов-шаблонов
         Config.templates_path = os.path.abspath(Config.config.get('templates', 'templates'))

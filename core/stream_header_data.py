@@ -1,30 +1,12 @@
 import re
-import numpy as np
 import pandas as pd
+
 
 class StreamHeaderData:
     """
     Класс представляет данные с листа 'Перечень загрузок Src-RDV' для указанной целевой таблицы.
     Названия полей соответствуют названиям колонок EXCEL
     """
-    row: pd.Series
-
-    version: str
-    version_end: str
-    algorithm_uid: str
-    subalgorithm_uid: str
-    flow_name: str
-    base_flow_name: str
-    tgt_table: str
-    target_rdv_object_type: str
-    src_schema: str
-    src_table: str
-    # Колонка source_name
-    source_system: str
-    scd_type: str
-    distribution_field: str
-    distribution_field_list: list
-    comment: str
 
     def __init__(self, row: pd.Series):
 
@@ -32,7 +14,11 @@ class StreamHeaderData:
         self.version = self.row["version"]
         self.version_end = self.row["version_end"]
         self.algorithm_uid = re.sub(r"\s", '', self.row["algorithm_uid"])
-        self.subalgorithm_uid = self.row["subalgorithm_uid"]
+
+        self.subalgorithm_uid = str(self.row["subalgorithm_uid"])
+        # Отсекаем нули после точки/запятой. Из-за странностей EXCEL
+        self.subalgorithm_uid = re.sub(r"(\.|,)0$", "", self.subalgorithm_uid)
+
         self.flow_name = re.sub(r"\s", '', self.row["flow_name"])
 
         self.tgt_full_name = re.sub(r"\s", '', self.row["tgt_table"])

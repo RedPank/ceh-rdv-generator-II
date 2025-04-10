@@ -8,6 +8,18 @@ import pandas as pd
 from core.config import Config
 from core.ui import MainWindow
 
+format_str = "%(asctime)s %(levelname)s %(message)s"
+
+
+class ColoredFormatter(logging.Formatter):
+    COLORS = {'DEBUG': '\033[94m', 'INFO': '\033[92m', 'WARNING': '\033[93m',
+              'ERROR': '\033[91m', 'CRITICAL': '\033[95m'}
+
+    def format(self, record):
+        log_fmt = f"{self.COLORS.get(record.levelname, '')}{format_str}\033[0m"
+        formatter = logging.Formatter(log_fmt)
+        return formatter.format(record)
+
 
 program: str = "ceh-rdv-generator-II"
 version: str = "1.0"
@@ -28,8 +40,11 @@ def main() -> int:
     Config.load_config(config_name=config_name)
 
     logging.basicConfig(level=logging.INFO, filename=Config.log_file, filemode="w",
-                        format="%(asctime)s %(levelname)s %(message)s",
+                        format=format_str,
                         encoding='utf-8')
+
+    if Config.colorlog:
+        logging.getLogger().handlers[0].setFormatter(ColoredFormatter())
 
     print("ceh-rdv-generator-II")
     print("Формирование файлов потоков AirFlow для загрузки данных из внешних источников в слой RDV системы ЦЕХ")
