@@ -122,8 +122,6 @@ class MainWindow(tk.Tk):
         else:
             try:
 
-                logging.info('Формирование файлов описания потоков ...')
-
                 mapping_generator(
                     file_path=self.file_path.get(),
                     out_path=Config.out_path

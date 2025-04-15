@@ -1,4 +1,4 @@
--- drop table if exists {{ ctx.schema }}.{{ ctx.name }} cascade;
+-- drop table if exists {{ ctx.schema }}.{{ ctx.table_name }} cascade;
 CREATE TABLE {{ ctx.schema }}.{{ ctx.table_name }} (
 {%- for field in ctx.fields %}
   {{ field.name }} {{ field.data_type }}

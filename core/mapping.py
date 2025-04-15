@@ -197,7 +197,7 @@ class MappingMeta:
         self.mapping_df = self.mapping_df.dropna(subset=['tgt_table'])
 
         # Заменяем NaN на пустые строки
-        self.mapping_df['version_end'] = self.mapping_df['version_end'].fillna(value="")
+        self.mapping_df['version_end'].fillna(value="", inplace=True)
         # Не берем строки, в которых поле version_end не пустое
         self.mapping_df = self.mapping_df.query("version_end == ''")
         # Оставляем только строки, которые соответствуют "оставленным" потокам
@@ -214,6 +214,12 @@ class MappingMeta:
 
         self.mapping_df['tgt_attr_datatype'] = self.mapping_df['tgt_attr_datatype'].fillna(value="").str.strip().str.lower()
 
+        # Заполняем признак 'tgt_attr_mandatory'.
+        # При чтении данных Панда заменяет строку 'null' на значение 'nan'. Поэтому производим "обратную" замену ...
+        self.mapping_df.fillna({'tgt_attr_mandatory': "null"}, inplace=True)
+        # Заменяем "\xa0" на "null" (и такое бывает)
+        self.mapping_df.replace({'tgt_attr_mandatory': "\xa0"}, value="null", inplace=True)
+
         # Заменяем значения NaN на пустые строки, что-бы дальше "не мучится"
         self.mapping_df['tgt_pk'] = self.mapping_df['tgt_pk'].fillna(value="").str.strip().str.lower()
 
@@ -224,7 +230,7 @@ class MappingMeta:
         self.mapping_df['attr_nulldefault'] = self.mapping_df['attr_nulldefault'].fillna(value="").str.strip()
 
         # Поле attr:nulldefault переименовано в attr_nulldefault для того, что-бы избежать ошибок внутри query()
-        # Экранировать "обратной кавычкой" получается только одно поле
+        # Экранировать "обратной кавычкой" получается только одно поле с пробелами в названии
         pattern = Config.get_regexp(name="hub_nulldefault", default="^(new_rk|good_default|delete_record)$")
         # For columns with spaces in their name, you can use backtick quoting.
         err_rows = self.mapping_df.query(f"`attr:conversion_type` == 'hub' and attr_nulldefault != '' and "

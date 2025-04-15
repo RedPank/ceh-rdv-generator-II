@@ -14,11 +14,7 @@ columns:
 {%- else %}
   - name: {{ field.name }}
     type: {{ field.data_type.upper() }}
-{%- if not(field.is_nullable) %}
-    nullable: false
-{%- else %}
-    nullable: true
-{%- endif %}
+    nullable: {{field.is_nullable}}
 {%- endif %}
 {%- endfor %}
 

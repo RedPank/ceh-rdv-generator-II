@@ -19,6 +19,7 @@ class Config:
     setting_up_field_lists: dict
     field_type_list: dict
     excel_data_definition: dict
+    setting_up_field_lists: dict
     out_path: str
     log_file: str
     author: str
@@ -60,6 +61,7 @@ class Config:
         Config.setting_up_field_lists = Config.config.get('setting_up_field_lists', dict())
         Config.field_type_list = Config.config.get('field_type_list', dict())
         Config.excel_data_definition = Config.config.get('excel_data_definition', dict())
+        Config.setting_up_field_lists = Config.config.get('setting_up_field_lists', dict())
 
         Config.excel_file = Config.config.get('excel_file', '')
         Config.author = Config.config.get('author', 'Unknown Author')

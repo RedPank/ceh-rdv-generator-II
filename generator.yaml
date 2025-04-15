@@ -35,8 +35,8 @@ anchor_area: &area
 # символов ^ - символ начала строки и $ - символ окончания строки.
 #  Пример: - "^wf_app_savc_dapp_rdv_savcsa_depositparticipant$"
 wf_templates_list:
-#  - "^wf_serv_boop_dapp_rdv_mart_loyaltyretailprofile$"
-  - ".+"
+  - "^wf_serv_boop_dapp_rdv_mart_loyaltyretailprofile$"
+#  - ".+"
 #  - "wf_app_savc_dapp_rdv_mart_payment_savcsa_rtldpstmntransfernstrctn_savc"
 #  - "^wf_app_savc_dapp_rdv_savcsa_depositparticipant$"
 #  - "wf_app_mssa_dapp_rdv_mart_product_additional_service"
@@ -51,8 +51,8 @@ out_path: "C:\\Projects\\rdv"
 
 # Имя файла EXCEL с маппингом потоков дял отображения в диалог выбора.
 # В диалоге можно выбрать любой другой файл маппинга для обработки.
-excel_file: "C:\\Projects\\rdv\\Маппинг_ЦЕХ_RDV_SAVC_v8.0_ (1).xlsx"
-
+#excel_file: "C:\\Projects\\rdv\\Маппинг_ЦЕХ_RDV_SAVC_v8.0_ (1).xlsx"
+excel_file: "C:\\Projects\\rdv\\Маппинг_ЦЕХ_RDV_BOOP_v2.1_old.xlsx"
 
 # Ссылка на каталог с шаблонами.
 # По умолчанию шаблоны берутся из каталога templates, который находится "рядом" с main.py
@@ -131,7 +131,7 @@ regexp:
 # Настройка списков полей
 # Раздел должен присутствовать!!!
 setting_up_field_lists:
-  # Список названий полей, которые НЕ будут использоваться для формирования hash
+  # Список названий полей, которые НЕ будут использоваться для формирования hash_src_fields
   # По поводу src_cd нет однозначного понимания ...
   # deleted_flg используется для формирования hash
   ignore_hash_set:
@@ -164,7 +164,7 @@ setting_up_field_lists:
     - processed_dt
     - hdp_processed_dttm
 
-  # Список полей целевой таблицы, которые НЕ будут добавлены в секцию field_map шаблона wf.yaml.
+  # Список полей целевой таблицы, которые НЕ будут добавлены в секцию field_map шаблона flow.wk.yaml.
   # Исключение полей из списка идет ДО добавления полей из секции add_field_map_ctx_list.
   # Не включать поля, которые присутствуют в теге tgt_history_field (для ODS).
   ignore_field_map_ctx_list:
@@ -173,10 +173,10 @@ setting_up_field_lists:
     - hash_diff
     - invalid_id
     - version_id
-    - deleted_flg
+#    - deleted_flg
     - valid_flg
 
-  # Список полей с описанием, которые БУДУТ добавлены в секцию field_map шаблона wf.yaml.
+  # Список полей с описанием, которые БУДУТ добавлены в секцию field_map шаблона flow.wk.yaml.
   # Добавление идет после исключения (список ignore_field_map_ctx_list).
   # Если поле уже присутствует в списке полей, то будет инициирована ошибка.
   # Поле добавляется "как есть".
@@ -192,12 +192,12 @@ setting_up_field_lists:
 
 
 # Определение поля даты в таблице-источнике по которому будет выполняться фильтрация новых записей.
-# Используется в шаблоне wf.yaml.
+# Используется в шаблоне flow.wk.yaml.
 processed_dt: commit_ts
 # Отсечение даты: microseconds,milliseconds,second,minute,hour,day,week,month,quarter,year,decade,,centurymillennium
 processed_dt_conversion: second
  
-# Поле "историчности" в целевой таблице (поле history_field в шаблоне mart.yaml)
+# Поле "историчности" в целевой таблице (поле history_field в шаблоне table.mart.yaml)
 # Применять с осторожностью. Алгоритм обработки этого параметра фреймом мне неизвестен.
 # tgt_history_field: effective_dttm
 

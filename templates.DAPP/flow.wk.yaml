@@ -71,7 +71,8 @@ mappings:
 
       field_map:
       {%- for field in mart.fields %}
-        {{ field.tgt_field }}:
+        {%- if field.is_hub_field == False %}                             
+        {{ field.tgt_field }}: 
           type: {{field.value_type}}
           {%- if field.value_type == "sql_expression" %} 
           value: |
@@ -80,6 +81,7 @@ mappings:
           value: {{ field.value }}
           {%- endif %}          
           field_type: {{ field.tgt_field_type }}
+        {%- endif %}           
       {%- endfor %}
       ref_map: []
 

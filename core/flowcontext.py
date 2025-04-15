@@ -65,7 +65,7 @@ class TargetTable:
         self.fields = []
         self.hash_fields = []
         self.multi_fields = []
-        self.hub_fields = []
+        # self.hub_fields = []
 
         self.distributed_by = ''
         self.primary_key = ''
@@ -133,25 +133,24 @@ class Source:
 
 class Hub:
 
-    def __init__(self, schema: str, table: str, resource_cd: str):
+    def __init__(self, schema: str, table: str):
         self.schema = schema
         self.table = table
-        self.resource_cd = resource_cd
         self.short_name = create_short_name(name=self.table, short_name_len=22, random_str_len=6)
 
 
 class Target:
 
-    def __init__(self, schema: str, table: str, resource_cd: str, src_cd: str, object_type: str):
+    def __init__(self, schema: str, table: str, src_cd: str, object_type: str, resource_cd: str = None):
 
         self.hubs = []
 
         self.schema = schema
         self.table = table
-        self.resource_cd = resource_cd
         self.short_name = create_short_name(name=self.table, short_name_len=22, random_str_len=6)
         self.src_cd = src_cd
         self.object_type = object_type
+        self.resource_cd = resource_cd if resource_cd is not None else '.'.join(['ceh', self.schema, self.table])
 
     def add_hub(self, hub: Hub):
         self.hubs.append(hub)
@@ -176,6 +175,7 @@ class MartField:
         self.value = value
         self.expression = expression
         self.tgt_field_type = tgt_field_type
+        self.is_hub_field = False
 
     @staticmethod
     def create_mart_field(row: Series):
@@ -270,7 +270,7 @@ class MartHub:
 
 
 class Mart:
-    # Список полей целевой таблицы, которые не будут добавлены в секцию field_map шаблона wf.yaml
+    # Список полей целевой таблицы, которые не будут добавлены в секцию field_map шаблона flow.wk.yaml
     _ignore_field_map_ctx_list: dict
 
     def __init__(self, short_name: str, algorithm_uid: str, algorithm_uid_2: str, target: str, source: str,
@@ -280,8 +280,10 @@ class Mart:
 
         Mart._ignore_field_map_ctx_list = Config.setting_up_field_lists.get('ignore_field_map_ctx_list', dict())
 
-        self.fields = []
-        self.mart_hub_list = []
+        # Список полей mart-таблицы
+        self.fields: [MartField] = []
+        #  Список hub - таблиц, связанных с mart
+        self.mart_hub_list: [MartHub] = []
 
         self.short_name = short_name
         self.algorithm_uid = algorithm_uid
@@ -300,7 +302,7 @@ class Mart:
         self.comment = comment
 
 
-        # Список полей с описанием, которые БУДУТ добавлены в секцию field_map шаблона wf.yaml
+        # Список полей с описанием, которые БУДУТ добавлены в секцию field_map шаблона flow.wk.yaml
         add_field_map_ctx_lis: dict = Config.setting_up_field_lists.get('add_field_map_ctx_list', dict())
         if type(add_field_map_ctx_lis) is dict:
             tgt_field_keys = add_field_map_ctx_lis.keys()
@@ -322,11 +324,22 @@ class Mart:
             msg = f'Поле "{mart_field.tgt_field}" уже присутствует в списке полей'
             raise IncorrectMappingException(msg)
 
+        # Ставим признак, того, что поле не надо выводить в секцию field_map
+        for i in range(len(self.mart_hub_list)):
+            if self.mart_hub_list[i].rk_field == mart_field.tgt_field:
+                 mart_field.is_hub_field = True
+
         self.fields.append(mart_field)
 
     def add_mart_hub_list(self, mart_hub: MartHub):
         mart_hub.actual_dttm_name = self.actual_dttm_name
         mart_hub.src_cd = self.src_cd
+
+        # Ставим признак, того, что поле не надо выводить в секцию field_map
+        for i in range(len(self.fields)):
+            if self.fields[i].tgt_field == mart_hub.rk_field:
+                self.fields[i].is_hub_field = True
+
         self.mart_hub_list.append(mart_hub)
 
 
@@ -371,7 +384,9 @@ class FlowContext:
         self.local_metrics.append(local_metric)
 
     def add_mart(self, mart: Mart):
+
         self.marts.append(mart)
+
         # Формируем уникальный список хабов потока
         for hub in mart.mart_hub_list:
             if not [True for ctx in self.hubs if ctx.full_table_name == hub.full_table_name]:
@@ -420,4 +435,5 @@ class FlowContext:
     def add_target_table(self, target_table: TargetTable):
         target_table.multi_fields.sort()
         target_table.hash_fields.sort()
+
         self.target_tables.append(target_table)
