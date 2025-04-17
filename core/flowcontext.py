@@ -65,7 +65,6 @@ class TargetTable:
         self.fields = []
         self.hash_fields = []
         self.multi_fields = []
-        # self.hub_fields = []
 
         self.distributed_by = ''
         self.primary_key = ''
@@ -281,9 +280,9 @@ class Mart:
         Mart._ignore_field_map_ctx_list = Config.setting_up_field_lists.get('ignore_field_map_ctx_list', dict())
 
         # Список полей mart-таблицы
-        self.fields: [MartField] = []
+        self.fields = []
         #  Список hub - таблиц, связанных с mart
-        self.mart_hub_list: [MartHub] = []
+        self.mart_hub_list = []
 
         self.short_name = short_name
         self.algorithm_uid = algorithm_uid

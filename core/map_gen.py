@@ -88,7 +88,7 @@ def mapping_generator(
 
             logging.info('')
             logging.info(f">>>>> Поток: {wrk_index + 1}: {flow_name}")
-            logging.info(f">>>>> Таблица: {table_index + 1}: {row["tgt_table"]}")
+            logging.info(f">>>>> Таблица: {table_index.__hash__() + 1}: {row["tgt_table"]}")
 
             # Данные строки "Перечень загрузок Src-RDV" листа для таблицы
             sh_data = StreamHeaderData(row=row)
@@ -188,7 +188,7 @@ def mapping_generator(
             if len( dupl ) > 0:
                 logging.warning(f"В таблице-источнике {sh_data.src_full_name} указаны повторяющиеся названия полей")
                 logging.warning(str(dupl))
-                logging.warning('При формировании файла описания источника дубликаты будут удалены')
+                logging.warning('При формировании файла описания таблицы источника дубликаты будут удалены')
                 Config.is_warning = True
 
             # Удаляем дубликаты при формировании описания внешней таблицы

@@ -194,10 +194,11 @@ class MappingMeta:
         self.mapping_df = _generate_mapping_df(file_data=byte_data, sheet_name='Детали загрузок Src-RDV')
 
         # Оставляем только строки, в которых заполнено поле 'Tgt_table'
-        self.mapping_df = self.mapping_df.dropna(subset=['tgt_table'])
+        # self.mapping_df = self.mapping_df.dropna(subset=['tgt_table'])
+        self.mapping_df.dropna(subset=['tgt_table'], inplace=True)
 
-        # Заменяем NaN на пустые строки
-        self.mapping_df['version_end'].fillna(value="", inplace=True)
+        # Заменяем NaN на пустые строки в колонке 'version_end'
+        self.mapping_df.fillna({'version_end': ""}, inplace=True)
         # Не берем строки, в которых поле version_end не пустое
         self.mapping_df = self.mapping_df.query("version_end == ''")
         # Оставляем только строки, которые соответствуют "оставленным" потокам
