@@ -16,15 +16,12 @@ from core.mapping import MappingMeta
 from core.stream_header_data import StreamHeaderData
 
 
-def mapping_generator(
-        file_path: str,
-        out_path: str
-) -> None:
+def mapping_generator(file_path: str, out_path: str) -> None:
     """Функция считывает данные из EXCEL, составляет список потоков и запускает процесс формирования файлов для каждого
      потока
 
     Args:
-        file_path (str): Полный путь к файлу маппинга РДВ
+        file_path (str): Полный путь к файлу маппинга RDV
         out_path (str): Каталог, в котором будут сформированы подкаталоги с описанием потоков
     """
 
