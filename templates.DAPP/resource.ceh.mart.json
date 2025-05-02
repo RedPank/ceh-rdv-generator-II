@@ -1,13 +1,13 @@
 {
     "resource_cd": "ceh.{{ ctx.schema }}.{{ ctx.table_name }}",
     "resource_desc": "Таблица {{ ctx.schema }}.{{ ctx.table_name }}",
-    "tags": [
+    "tags": {
 {%- if tags|length > 0 %}
 {%- for tag in tags %}
         {{tag}}{%- if not loop.last -%},{% endif -%}
 {%- endfor %}
 {%- endif %}
-    ],
+    },
     "features": {"domain": "{{ ctx.schema.upper() }}", "source_system": "{{ ctx.src_cd.upper() }}"},
     "is_readonly": false,
 	"is_deleted": false,

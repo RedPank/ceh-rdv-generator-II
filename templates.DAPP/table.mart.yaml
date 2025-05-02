@@ -1,10 +1,11 @@
+# Created {{ ctx.created }}
 schema_version: '1.0'
 type: MART
-name: {{ ctx.table_name }}
+name: {{ tgt.table_name }}
 schema: rdv
 
 columns:
-{%- for field in ctx.fields %}
+{%- for field in tgt.fields %}
 {%- if field.name == 'hash_diff' %}
   - name: hash_diff
     type: CHAR
@@ -18,18 +19,18 @@ columns:
 {%- endif %}
 {%- endfor %}
 
-{%- if ctx.hash_fields|length > 0 %}
+{%- if tgt.hash_fields|length > 0 %}
 hash_src_fields:
-{%- for hash_field in ctx.hash_fields %}
+{%- for hash_field in tgt.hash_fields %}
   - {{ hash_field.lower() }}
 {%- endfor %}
 {%- else %}
 hash_src_fields: []
 {%- endif %}
 
-{%- if ctx.multi_fields|length > 0 %}
+{%- if tgt.multi_fields|length > 0 %}
 multi_fields:
-{%- for field in ctx.multi_fields %}
+{%- for field in tgt.multi_fields %}
   - name: {{ field }}
     field_data_quality_checks:
     - name: IsEmpty
@@ -40,18 +41,18 @@ multi_fields: []
 
 ref_fields: []
 
-{%- if ctx.hub_ctx_list|length > 0 %}
+{%- if tgt.hub_fields|length > 0 %}
 hub_fields:
-{%- for hub_field in ctx.hub_ctx_list %}
-  - name: {{ hub_field.name }}
+{%- for hub_field in tgt.hub_fields %}
+  - name: {{ hub_field.rk_field }}
     hub_table: {{ hub_field.hub_name_only }}
-    hub_schema: {{ hub_field.hub_schema }}
+    hub_schema: {{ hub_field.schema }}
     is_bk: {{ hub_field.is_bk }}
 {%- endfor %}
 {%- else %}
 hub_fields: []
 {%- endif %}
 
-{%- if ctx.tgt_history_field|length > 0 %}
-history_field: {{ ctx.tgt_history_field }}
+{%- if tgt.tgt_history_field|length > 0 %}
+history_field: {{ tgt.tgt_history_field }}
 {%- endif %}

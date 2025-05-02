@@ -1,13 +1,13 @@
 {
     "resource_cd": "ceh.{{ctx.schema}}.{{ctx.hub_name_only}}",
     "resource_desc": "Хаб {{ctx.schema}}.{{ctx.hub_name_only}}",
-    "tags": [
+    "tags": {
 {%- if tags|length > 0 %}
 {%- for tag in tags %}
         {{tag}}{%- if not loop.last -%},{% endif -%}
 {%- endfor %}
 {%- endif %}
-    ],
+    },
     "features": {
         "domain": "{{ctx.schema}}"
     },

@@ -1,6 +1,7 @@
--- drop table if exists {{ ctx.schema }}.{{ ctx.table_name }} cascade;
-CREATE TABLE {{ ctx.schema }}.{{ ctx.table_name }} (
-{%- for field in ctx.fields %}
+-- Created {{ ctx.created }}
+-- drop table if exists {{ tgt.schema }}.{{ tgt.table_name }} cascade;
+CREATE TABLE {{ tgt.schema }}.{{ tgt.table_name }} (
+{%- for field in tgt.fields %}
   {{ field.name }} {{ field.data_type }}
   {%- if not field.is_nullable -%} 
 {{ ' not null' }} 
@@ -14,14 +15,14 @@ WITH (
   compresslevel=1,
   compresstype=zstd
 )
-DISTRIBUTED BY ({{ ctx.distributed_by }});
+DISTRIBUTED BY ({{ tgt.distributed_by }});
 
-{% if ctx.comment|length -%}
-COMMENT ON TABLE {{ ctx.schema }}.{{ ctx.table_name }} IS '{{ctx.comment}}';
+{% if tgt.comment|length -%}
+COMMENT ON TABLE {{ tgt.schema }}.{{ tgt.table_name }} IS '{{tgt.comment}}';
 {% endif -%}
 
-{%- for field in ctx.fields %}
+{%- for field in tgt.fields %}
 {%- if field.comment|length %}
-COMMENT ON COLUMN {{ ctx.schema }}.{{ ctx.table_name }}.{{ field.name }} IS '{{ field.comment }}';
+COMMENT ON COLUMN {{ tgt.schema }}.{{ tgt.table_name }}.{{ field.name }} IS '{{ field.comment }}';
 {%- endif %}
 {%- endfor -%}

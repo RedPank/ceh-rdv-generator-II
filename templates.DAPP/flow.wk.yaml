@@ -34,7 +34,7 @@ targets:
 {%- for hub in ctx.hubs %}
   - short_name: {{ hub.short_name }}
     schema: {{ hub.schema }}
-    table: {{ hub.hub_target }}
+    table: {{ hub.hub_table }}
     resource_cd: {{ hub.resource_cd }}
 {% endfor -%}
 
@@ -80,7 +80,7 @@ mappings:
           {%- else %}          
           value: {{ field.value }}
           {%- endif %}          
-          field_type: {{ field.tgt_field_type }}
+          field_type: {{ field.tgt_field_type|upper }}
         {%- endif %}           
       {%- endfor %}
       ref_map: []
@@ -100,7 +100,7 @@ mappings:
             {%- else %}
               type: column
               value: {{ hub.src_attribute }}
-              field_type: {{hub.field_type}}
+              field_type: {{hub.field_type | upper}}
             {% endif -%}
 
         {% endfor %}

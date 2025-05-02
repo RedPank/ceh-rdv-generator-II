@@ -1,6 +1,7 @@
 import random
 import string
 from datetime import datetime
+import os
 
 from pandas import Series
 
@@ -38,11 +39,16 @@ def create_short_name(name: str, short_name_len: int, random_str_len: int,
 # Класс TargetTable ----------------------------------------------------------------------------------------------------
 class DataBaseField:
 
-    def __init__(self, name: str, data_type: str, comment:str, is_nullable: bool, is_pk):
+    def __init__(self, name: str, data_type: str, comment:str, is_nullable: bool, is_pk, properties = None):
         self.name = name
         self.data_type = data_type
         self.is_nullable = is_nullable
         self.comment = comment
+
+        if properties is None:
+            self.properties = dict()
+        else:
+            self.properties = properties
 
         if type(is_pk) is bool:
             self.is_pk = is_pk
@@ -53,18 +59,21 @@ class DataBaseField:
 
 class TargetTable:
 
-    _ignore_primary_key: list
-    _ignore_hash_fields: list
+    _ignore_primary_key = None
+    _ignore_hash_fields = None
 
     def __init__(self, schema: str, table_name: str, comment: str, table_type: str, src_cd: str,
                  distribution_field: str):
 
-        TargetTable._ignore_primary_key = Config.setting_up_field_lists.get('ignore_primary_key', list())
-        TargetTable._ignore_hash_fields = Config.setting_up_field_lists.get('ignore_hash_set', list())
+        if not TargetTable._ignore_primary_key:
+            TargetTable._ignore_primary_key = Config.setting_up_field_lists.get('ignore_primary_key', list())
+        if not TargetTable._ignore_hash_fields:
+            TargetTable._ignore_hash_fields = Config.setting_up_field_lists.get('ignore_hash_set', list())
 
         self.fields = []
         self.hash_fields = []
         self.multi_fields = []
+        self.hub_fields = []
 
         self.distributed_by = ''
         self.primary_key = ''
@@ -74,11 +83,12 @@ class TargetTable:
         self.comment = comment
         self.table_type = table_type.upper()
         self.src_cd = src_cd
-        self.actual_dttm_name = f"{self.src_cd.lower()}_dttm_name"
+        self.actual_dttm_name = f"{self.src_cd.lower()}_actual_dttm"
 
         self.file_name = '.'.join([self.schema, self.table_name])
         self.distribution_field= distribution_field.lower()
         self.distributed_by = self.distribution_field
+
 
     def add_field(self, field: DataBaseField):
         self.fields.append(field)
@@ -97,9 +107,11 @@ class TargetTable:
 
         # Список первичных ключей для опции multi_fields.
         # Поля, которые являются ссылками на hub - не включаются
-        if field.is_pk and field.name not in self.hash_fields and field.name not in TargetTable._ignore_primary_key:
+        if field.is_pk and not field.properties.get("is_hub_field", False) and field.name not in TargetTable._ignore_primary_key:
             self.multi_fields.append(field.name)
 
+    def add_hub_field(self, hub: 'HubMartField'):
+        self.hub_fields.append(hub)
 
 class Source:
 
@@ -130,19 +142,9 @@ class Source:
         self.fields.append(field)
 
 
-class Hub:
-
-    def __init__(self, schema: str, table: str):
-        self.schema = schema
-        self.table = table
-        self.short_name = create_short_name(name=self.table, short_name_len=22, random_str_len=6)
-
-
 class Target:
 
     def __init__(self, schema: str, table: str, src_cd: str, object_type: str, resource_cd: str = None):
-
-        self.hubs = []
 
         self.schema = schema
         self.table = table
@@ -150,9 +152,6 @@ class Target:
         self.src_cd = src_cd
         self.object_type = object_type
         self.resource_cd = resource_cd if resource_cd is not None else '.'.join(['ceh', self.schema, self.table])
-
-    def add_hub(self, hub: Hub):
-        self.hubs.append(hub)
 
 
 class LocalMetric:
@@ -168,13 +167,13 @@ class LocalMetric:
 
 class MartField:
 
-    def __init__(self, tgt_field: str, value_type: str, value: str, expression: str, tgt_field_type: str):
+    def __init__(self, tgt_field: str, value_type: str, value: str, expression: str, tgt_field_type: str, is_hub_field = False):
         self.tgt_field = tgt_field
         self.value_type = value_type
         self.value = value
         self.expression = expression
         self.tgt_field_type = tgt_field_type
-        self.is_hub_field = False
+        self.is_hub_field = is_hub_field
 
     @staticmethod
     def create_mart_field(row: Series):
@@ -184,44 +183,50 @@ class MartField:
         tgt_field:str = str(row["tgt_attribute"]).strip().lower()
         tgt_field_type:str = str(row["tgt_attr_datatype"]).strip().lower()
         expression: str = str(row["expression"]).strip().removeprefix('=')
-        # not_null:bool = str(row["tgt_attr_mandatory"]).strip().lower() == 'not null'
         is_pk:bool = str(row["_pk"]).strip().lower() == 'pk'
+
+        is_hub_field: bool = False
+        if (type(row['attr:bk_object']) == str
+                and len(row['attr:bk_object'].split('.')) <= 2
+                and row['attr:bk_object'].split('.')[2] == tgt_field):
+            is_hub_field = True
+
 
         value = src_attr
 
         if expression:
             value_type = "sql_expression"
-            expression = expression + ' :: ' + tgt_field_type.upper()
+            expression = expression + ' :: ' + tgt_field_type
 
-        elif src_attr_datatype in ["string"] and tgt_field_type in ["text"] and not is_pk:
+        elif src_attr_datatype in ["text"] and tgt_field_type in ["text"] and not is_pk:
             value_type = "sql_expression"
-            expression = f"case when {src_attr} = '' then Null else {src_attr} end"  + ' :: ' + tgt_field_type.upper()
+            expression = f"case when {src_attr} = '' then Null else {src_attr} end"  + ' :: ' + tgt_field_type
 
-        elif src_attr_datatype in ["string"] and tgt_field_type in ["timestamp"]:
+        elif src_attr_datatype in ["text"] and tgt_field_type in ["timestamp"]:
             value_type = "sql_expression"
             expression = f"etl.try_cast2ts({src_attr})"
 
-        elif src_attr_datatype in ["string"] and tgt_field_type in ["date"]:
+        elif src_attr_datatype in ["text"] and tgt_field_type in ["date"]:
             value_type = "sql_expression"
             expression = f"etl.try_cast2dt({src_attr})"
 
-        elif src_attr_datatype in ["string"] and tgt_field_type in ["smallint", "int2"]:
+        elif src_attr_datatype in ["text"] and tgt_field_type in ["smallint", "int2"]:
             value_type = "sql_expression"
             expression = f"etl.try_cast2int2({src_attr})"
 
-        elif src_attr_datatype in ["string"] and tgt_field_type in ["int", "integer", "int4"]:
+        elif src_attr_datatype in ["text"] and tgt_field_type in ["int", "integer", "int4"]:
             value_type = "sql_expression"
             expression = f"etl.try_cast2int4({src_attr})"
 
-        elif src_attr_datatype in ["string"] and tgt_field_type in ["bigint", "int8"]:
+        elif src_attr_datatype in ["text"] and tgt_field_type in ["bigint", "int8"]:
             value_type = "sql_expression"
             expression = f"etl.try_cast2int8({src_attr})"
 
-        elif src_attr_datatype in ["string"] and tgt_field_type in ["bool", "boolean"]:
+        elif src_attr_datatype in ["text"] and tgt_field_type in ["bool", "boolean"]:
             value_type = "sql_expression"
             expression = f"etl.try_cast2bool({src_attr})"
 
-        elif src_attr_datatype in ["string"] and tgt_field_type in ["decimal"]:
+        elif src_attr_datatype in ["text"] and tgt_field_type in ["decimal"]:
             value_type = "sql_expression"
             expression = f"etl.try_cast2decimal({src_attr})"
 
@@ -229,21 +234,24 @@ class MartField:
             value_type = "column"
             value = src_attr
 
+
         fld = MartField(tgt_field=tgt_field, value_type = value_type, value=value,
-                        tgt_field_type=tgt_field_type.upper(),expression=expression)
+                        tgt_field_type=tgt_field_type,expression=expression, is_hub_field=is_hub_field)
         return fld
 
-class MartHub:
-    def __init__(self, hub_target: str, rk_field: str, business_key_schema: str, on_full_null: str, src_attribute: str,
+class HubMartField:
+    def __init__(self, hub_table: str, rk_field: str, business_key_schema: str, on_full_null: str, src_attribute: str,
                  src_type: str, field_type: str, is_bk: bool, schema: str, expression: str):
 
         self.schema = schema            # Схема в базе данных, где расположена хаб-таблица
-        self.hub_target = hub_target    # Имя хаб-таблицы без схемы
-        self.table = hub_target
-        self.hub_name_only = self.hub_target
-        self.full_table_name = self.schema + '.' + self.hub_target
-        self.resource_cd = "ceh." + self.schema + '.' + self.hub_target
-        self.short_name = create_short_name(name=self.hub_target, short_name_len=22, random_str_len=6)
+
+        self.hub_table = hub_table              # Имя хаб-таблицы без схемы
+        self.table = hub_table                  # Имя хаб-таблицы без схемы
+        self.hub_name_only = hub_table          # Имя хаб-таблицы без схемы
+
+        self.full_table_name = self.schema + '.' + self.hub_table
+        self.resource_cd = "ceh." + self.schema + '.' + self.hub_table
+        self.short_name = create_short_name(name=self.hub_table, short_name_len=22, random_str_len=6)
 
         self.rk_field = rk_field
         self.id_field = self.rk_field.removesuffix('_rk') + '_id'
@@ -252,20 +260,21 @@ class MartHub:
         self.bk_schema_name = business_key_schema
         self.on_full_null = on_full_null
         self.src_attribute = src_attribute
-        self.expression = expression if type(expression) is str else ''
+        # self.expression = expression if type(expression) is str else ''
+        self.expression = ''
         self.src_type = src_type
         self.field_type = field_type
-        self.is_bk = 'true' if is_bk else 'false'
+        self.is_bk = is_bk
         self.src_cd = ''
         self.actual_dttm_name = ''
 
         # Разбираемся со значениями
-        if self.expression:
-            if self.src_type.upper() == 'STRING':
-                self.expression = f"case when {self.expression} = '' then Null else {self.expression} end"
-        else:
-            if self.src_type.upper() == 'STRING':
-                self.expression = f"case when {src_attribute} = '' then Null else {src_attribute} end"
+        # if self.expression:
+        #     if self.src_type.upper() == 'TEXT':
+        #         self.expression = f"case when {self.expression} = '' then Null else {self.expression} end"
+        # else:
+        #     if self.src_type.upper() == 'TEXT':
+        #         self.expression = f"case when {src_attribute} = '' then Null else {src_attribute} end"
 
 
 class Mart:
@@ -309,7 +318,7 @@ class Mart:
                 # Описание поля
                 fld = add_field_map_ctx_lis[tgt_field]
                 mart_field = MartField(tgt_field=tgt_field, value_type=fld.type, value=fld.value,
-                                       tgt_field_type=fld.field_type.upper(), expression="")
+                                       tgt_field_type=fld.field_type, expression="")
                 self.add_fields(mart_field)
 
     def add_fields(self, mart_field: MartField):
@@ -323,21 +332,11 @@ class Mart:
             msg = f'Поле "{mart_field.tgt_field}" уже присутствует в списке полей'
             raise IncorrectMappingException(msg)
 
-        # Ставим признак, того, что поле не надо выводить в секцию field_map
-        for i in range(len(self.mart_hub_list)):
-            if self.mart_hub_list[i].rk_field == mart_field.tgt_field:
-                 mart_field.is_hub_field = True
-
         self.fields.append(mart_field)
 
-    def add_mart_hub_list(self, mart_hub: MartHub):
+    def add_mart_hub_list(self, mart_hub: HubMartField):
         mart_hub.actual_dttm_name = self.actual_dttm_name
         mart_hub.src_cd = self.src_cd
-
-        # Ставим признак, того, что поле не надо выводить в секцию field_map
-        for i in range(len(self.fields)):
-            if self.fields[i].tgt_field == mart_hub.rk_field:
-                self.fields[i].is_hub_field = True
 
         self.mart_hub_list.append(mart_hub)
 
@@ -369,7 +368,8 @@ class FlowContext:
         self.processed_dt_conversion = Config.setting_up_field_lists.get('processed_dt_conversion', 'second')
         self.tgt_history_field = Config.setting_up_field_lists.get('tgt_history_field', '')
 
-        self.created = f'"{datetime.now().strftime("%d %b %Y %H:%M:%S")}"'
+        self.username = str(os.environ.get('USERNAME', 'Unknown Author')).title()
+        self.created = f'"{datetime.now().strftime("%d %b %Y %H:%M:%S")}" by {self.username}'
 
 
     def add_source(self, source: Source):

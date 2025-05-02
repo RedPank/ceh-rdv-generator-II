@@ -4,13 +4,12 @@ import logging
 import os
 import re
 
-import pandas as pd
 from pandas import DataFrame
 
 from core import mapping
 from core.config import Config
 from core.exportdata import ExportData
-from core.flowcontext import FlowContext, Source, Target, Hub, Mart, MartField, MartHub, LocalMetric, TargetTable, \
+from core.flowcontext import FlowContext, Source, Target, Mart, MartField, HubMartField, LocalMetric, TargetTable, \
     DataBaseField
 from core.mapping import MappingMeta
 from core.stream_header_data import StreamHeaderData
@@ -57,6 +56,18 @@ def mapping_generator(file_path: str, out_path: str) -> None:
 
     tgt_attr_name_regexp_pattern: str = Config.get_regexp('tgt_attr_name_regexp')
 
+    pattern_bk_schema: str = Config.get_regexp('bk_schema_regexp')
+    pattern_bk_object: str = Config.get_regexp('bk_object_regexp')
+
+    processed_dt = Config.config.get('processed_dt', 'processed_dt')
+    processed_dt_conversion = Config.config.get('processed_dt_conversion', 'second')
+
+    corresp_datatype: dict = Config.field_type_list.get('corresp_datatype', dict())
+    if len(corresp_datatype) == 0:
+        Config.is_warning = True
+        logging.warning('Не найден параметр "corresp_datatype" в файле конфигурации')
+        logging.warning("Проверка соответствия типов полей источника и целевой таблицы производится не будет")
+
     # Данные EXCEL
     mapping_meta = MappingMeta(byte_data)
 
@@ -81,28 +92,31 @@ def mapping_generator(file_path: str, out_path: str) -> None:
         flow_context = FlowContext(flow_name)
 
         # Цикл по списку целевых таблиц
-        for table_index, row in mapping_meta.mapping_list.query(f'flow_name == "{flow_name}"').iterrows():
+        table_index: int = 0
+        for _, row in mapping_meta.mapping_list.query(f'flow_name == "{flow_name}"').iterrows():
 
             logging.info('')
             logging.info(f">>>>> Поток: {wrk_index + 1}: {flow_name}")
-            logging.info(f">>>>> Таблица: {table_index.__hash__() + 1}: {row["tgt_table"]}")
+            logging.info(f">>>>> Таблица: {table_index + 1}: {row["tgt_table"]}")
+            table_index =+ 1
 
             # Данные строки "Перечень загрузок Src-RDV" листа для таблицы
             sh_data = StreamHeaderData(row=row)
 
+            # Умеем работать только с MART-таблицами
             if sh_data.target_rdv_object_type != 'MART':
                 logging.error(f"Программа не поддерживает обработку целевых объектов с типом "
                               f"{sh_data.target_rdv_object_type}")
                 Config.is_error = True
                 continue
 
+            # Полное имя таблицы: схема + имя_таблицы
             tgt_full_name = sh_data.tgt_full_name
 
             # Данные для заданной целевой таблицы
             tgt_mapping: DataFrame = mapping_meta.get_mapping_by_tgt_table(tgt_full_name)
 
             logging.info('')
-
 
             if len(tgt_mapping) == 0:
                 msg = f"Не найдена таблица {tgt_full_name} на листе 'Детали загрузок Src-RDV'"
@@ -172,10 +186,10 @@ def mapping_generator(file_path: str, out_path: str) -> None:
 
             ceh_resource: str = "ceh." + tgt_full_name
 
+            # Внешняя таблица - источник
             source = Source(system=sh_data.source_system, schema=sh_data.src_schema, table=sh_data.src_table,
                             algorithm_uid=algorithm_uid, algorithm_uid_2=subalgorithm_uid, ceh_resource=ceh_resource,
                             src_cd=src_cd, data_capture_mode=Config.data_capture_mode)
-
 
             # Поля таблицы - источника
             src_mapping = mapping_meta.get_mapping_by_src_table(src_table=sh_data.src_full_name)
@@ -188,8 +202,9 @@ def mapping_generator(file_path: str, out_path: str) -> None:
                 logging.warning('При формировании файла описания таблицы источника дубликаты будут удалены')
                 Config.is_warning = True
 
-            # Удаляем дубликаты при формировании описания внешней таблицы
+            # Удаляем дубликаты имен полей из списка полей таблицы-источника
             src_mapping = src_mapping.drop_duplicates(subset=['src_attribute'], keep='first')
+            # Формируем список полей источника
             for s_index, s_row in src_mapping.iterrows():
 
                 # Проверяем типы полей источника
@@ -199,44 +214,16 @@ def mapping_generator(file_path: str, out_path: str) -> None:
                     Config.is_warning = True
 
                 source.add_field(DataBaseField(name=s_row['src_attribute'], data_type=s_row['src_attr_datatype'],
-                                               comment=s_row['comment'], is_nullable=False, is_pk=s_row['src_pk']))
+                                               comment=s_row['comment'], is_nullable=False, is_pk=s_row['src_pk'],
+                                               properties = dict()))
 
             flow_context.add_source(source)
 
+            # Целевая таблица
             target = Target(schema=sh_data.tgt_schema, table = sh_data.tgt_table, src_cd=src_cd.lower(),
                             object_type=sh_data.target_rdv_object_type)
 
-            # Список хабов *********************************************************************************************
-            hubs: pd.DataFrame = tgt_mapping[tgt_mapping['attr:conversion_type'] == 'hub']
-            hubs = hubs[['tgt_attribute', 'attr:bk_schema', 'attr:bk_object', 'attr_nulldefault', 'src_attribute',
-                       'expression', 'tgt_pk', 'tgt_attr_datatype', '_pk', 'src_attr_datatype', 'tgt_attr_mandatory']]
-
-            pattern_bk_schema: str = Config.get_regexp('bk_schema_regexp')
-            pattern_bk_object: str = Config.get_regexp('bk_object_regexp')
-            for h_index, h_row in hubs.iterrows():
-
-                # Контроль названия бк-схемы
-                bk_schema = h_row['attr:bk_schema']
-                if not re.match(pattern_bk_schema, bk_schema):
-                    logging.error(
-                        f'Имя бк-схемы "{bk_schema}" на листе "Детали загрузок Src-RDV"'
-                        f' не соответствует шаблону "{pattern_bk_schema}"')
-                    is_table_error = True
-
-                bk_object:str = h_row['attr:bk_object']
-                if not re.match(pattern_bk_object, bk_object):
-                    logging.error(
-                        f'Имя хаба "{bk_object}" на листе "Детали загрузок Src-RDV"'
-                        f' не соответствует шаблону "{pattern_bk_object}"')
-                    is_table_error = True
-
-                target.add_hub(Hub(schema=bk_object.split('.')[0], table = bk_object.split('.')[1]))
-
-            flow_context.add_target(target)
-
-            processed_dt = Config.config.get('processed_dt', 'processed_dt')
-            processed_dt_conversion = Config.config.get('processed_dt_conversion', 'second')
-
+            # Секция "local_metrics". Данные формируются для каждой таблицы. Но используется перове значение.
             local_metric: LocalMetric = (
                 LocalMetric(processed_dt_conversion=processed_dt_conversion,
                             processed_dt=processed_dt,
@@ -246,8 +233,10 @@ def mapping_generator(file_path: str, out_path: str) -> None:
                             name=sh_data.src_table))
             flow_context.add_local_metric(local_metric=local_metric)
 
+            flow_context.add_target(target)
+
             delta_mode = Config.config.get("delta_mode", 'new')
-            actual_dttm_name = f"{src_cd.lower()}_dttm_name"
+            actual_dttm_name = f"{src_cd.lower()}_actual_dttm"
 
             mart_mapping: Mart = (
                 Mart(short_name=target.short_name, algorithm_uid=sh_data.algorithm_uid,
@@ -264,11 +253,28 @@ def mapping_generator(file_path: str, out_path: str) -> None:
                 mart_field = MartField.create_mart_field(f_row)
                 mart_mapping.add_fields(copy.copy(mart_field))
 
+                if mart_field.is_hub_field:
+                    logging.warning(f"Поле '{mart_field.tgt_field}' не будет добавлено в секцию 'field_map', "
+                                    f"т.к. присутствует в секции 'hub_map'")
+
                 # Проверяем типы полей целевой таблицы
                 if f_row['tgt_attr_datatype'] not in tgt_attr_datatypes:
                     logging.warning(f'Тип поля "{f_row['tgt_attribute']}"/"{f_row['tgt_attr_datatype']}" в целевой таблице '
                                     f'не входит в список разрешенных типов')
                     Config.is_warning = True
+
+                # Проверяем соответствие типа данных полей источника и целевой таблицы
+                if len (corresp_datatype) != 0  and f_row['src_attribute'] != '':
+                    if f_row['src_attr_datatype'] not in corresp_datatype:
+                        logging.warning(f"Тип данных поля источника '{f_row['src_attr_datatype']}' отсутствует в 'corresp_datatype'")
+                        Config.is_warning= True
+
+                    elif f_row["tgt_attr_datatype"] not in corresp_datatype[f_row['src_attr_datatype']]:
+                        logging.warning(f"Тип данных '{f_row['tgt_attr_datatype']}' поля целевой таблицы "
+                                      f"'{f_row['tgt_attribute']}' "
+                                      f"не найден списке в 'corresp_datatype' "
+                                      f"{f_row['src_attr_datatype']}:{corresp_datatype[f_row['src_attr_datatype']]}")
+                        Config.is_warning = True
 
                 # Проверяем соответствие названия полей целевой таблицы шаблону
                 if not re.match(tgt_attr_name_regexp_pattern, f_row['tgt_attribute']):
@@ -302,28 +308,6 @@ def mapping_generator(file_path: str, out_path: str) -> None:
 
                         Config.is_error = True
 
-            # Составляем список hub-таблиц
-            for h_index, h_row in hubs.iterrows():
-
-                # Если rk-поле прописано в "attr:bk_object", то берем его оттуда
-                rk_field = h_row['tgt_attribute'] if len(h_row['attr:bk_object'].split('.')) == 2 else h_row['attr:bk_object'].split('.')[2]
-
-                mart_hub = MartHub(rk_field=rk_field, hub_target=h_row['attr:bk_object'].split('.')[1],
-                                   business_key_schema=h_row['attr:bk_schema'],
-                                   on_full_null=h_row['attr_nulldefault'], src_attribute=h_row['src_attribute'],
-                                   src_type=h_row['src_attr_datatype'], expression=h_row['expression'],
-                                   field_type=h_row['tgt_attr_datatype'],
-                                   is_bk=h_row['_pk'] == 'pk', schema=h_row['attr:bk_object'].split('.')[0])
-
-                # Привязываем hub к описанию mart-таблицы
-                mart_mapping.add_mart_hub_list(mart_hub=mart_hub)
-
-                # Полный список hub потока
-                bk_object:str = h_row['attr:bk_object']
-                target.add_hub(Hub(schema=bk_object.split('.')[0], table = bk_object.split('.')[1]))
-
-            # Добавляем описание mart к потоку
-            flow_context.add_mart(copy.copy(mart_mapping))
 
             #  Описание MART - таблицы со всеми "вложениями"
             target_table = TargetTable(schema=sh_data.tgt_schema, table_name=sh_data.tgt_table, comment=sh_data.comment,
@@ -332,11 +316,52 @@ def mapping_generator(file_path: str, out_path: str) -> None:
 
             #  Список полей целевой таблицы
             for f_index, f_row in tgt_mapping.iterrows():
+
+                properties = dict()
+                if f_row["attr:conversion_type"] == 'hub':
+                    properties["is_hub_field"] = True
+                    properties["hub"] = []
+
+                    # Контроль названия бк-схемы и имени хаба
+                    bk_schema = f_row['attr:bk_schema']
+                    if not re.match(pattern_bk_schema, bk_schema):
+                        logging.error(
+                            f'Имя бк-схемы "{bk_schema}" на листе "Детали загрузок Src-RDV"'
+                            f' не соответствует шаблону "{pattern_bk_schema}"')
+                        is_table_error = True
+
+                    bk_object:str = f_row['attr:bk_object']
+                    if not re.match(pattern_bk_object, bk_object):
+                        logging.error(
+                            f'Имя хаба "{bk_object}" на листе "Детали загрузок Src-RDV"'
+                            f' не соответствует шаблону "{pattern_bk_object}"')
+                        is_table_error = True
+
+                    # Если rk-поле прописано в "attr:bk_object", то берем его оттуда
+                    rk_field = f_row['tgt_attribute'] if len(f_row['attr:bk_object'].split('.')) == 2 else f_row['attr:bk_object'].split('.')[2]
+
+                    mart_hub = HubMartField(rk_field=rk_field, hub_table=f_row['attr:bk_object'].split('.')[1],
+                                            business_key_schema=f_row['attr:bk_schema'],
+                                            on_full_null=f_row['attr_nulldefault'], src_attribute=f_row['src_attribute'],
+                                            src_type=f_row['src_attr_datatype'], expression=f_row['expression'],
+                                            field_type=f_row['tgt_attr_datatype'],
+                                            is_bk=f_row['_pk'] == 'pk', schema=f_row['attr:bk_object'].split('.')[0])
+
+                    # Привязываем hub к описанию mart-таблицы
+                    mart_mapping.add_mart_hub_list(mart_hub=mart_hub)
+                    # Привязываем hub к целевой таблице
+                    target_table.add_hub_field(mart_hub)
+
+
+                # Привязываем поле к целевой таблице
                 data_base_field = DataBaseField(name=f_row["tgt_attribute"], data_type=f_row['tgt_attr_datatype'],
                                                 comment=f_row["comment"],
                                                 is_nullable=f_row["tgt_attr_mandatory"] == 'null',
-                                                is_pk=f_row["_pk"] == 'pk')
+                                                is_pk=f_row["_pk"] == 'pk',
+                                                properties=properties)
+
                 target_table.add_field(field=data_base_field)
+
 
             flow_context.add_target_table(target_table=target_table)
 
@@ -344,6 +369,9 @@ def mapping_generator(file_path: str, out_path: str) -> None:
             if len(target_table.hash_fields) > 100:
                 logging.warning(f"Количество полей для расчета hash_diff в таблице {target_table.table_name} более 100")
                 Config.is_warning = True
+
+            # Добавляем описание mart к потоку
+            flow_context.add_mart(mart_mapping)
 
         # Конец цикла по списку таблиц #################################################################################
 

@@ -1,9 +1,8 @@
 /venv/
 __pycache__/
-/123/
 /generator.log
 /.idea/
 /desktop.ini
-/999/
-/test.py
+/test/ExcelWriter.py
 /core/generator.log
+/test/

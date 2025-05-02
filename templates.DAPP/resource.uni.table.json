@@ -2,13 +2,13 @@
 {
     "resource_cd": "{{ ctx.resource_cd }}",
     "resource_desc": "Таблица {{ctx.schema}}.{{ctx.table}}",
-    "tags": [
+    "tags": {
 {%- if tags|length > 0 %}
 {%- for tag in tags %}
-        {{tag}}{%- if not loop.last -%},{% endif -%}
+        {{tag}}{%- if not loop.last -%}, {% endif -%}
 {%- endfor %}
 {%- endif %}
-],
+    },
     "features": {},
     "status": {
         "is_readonly": false,

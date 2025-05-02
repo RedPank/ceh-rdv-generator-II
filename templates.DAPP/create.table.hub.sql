@@ -1,3 +1,4 @@
+-- Created {{ ctx.created }}
 CREATE TABLE IF NOT EXISTS {{ctx.full_table_name}} (
     {{ctx.rk_field}} int8 NOT NULL,
     {{ctx.id_field}} text NOT NULL,

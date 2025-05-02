@@ -152,19 +152,24 @@ class MappingMeta:
         # Перечень загрузок Src-RDV ------------------------------------------------------------------------------------
         self.mapping_list = _generate_mapping_df(file_data=byte_data, sheet_name='Перечень загрузок Src-RDV')
 
+        # Заменяем значения NaN на пустые строки.
+        self.mapping_list.fillna({'flow_name':""}, inplace=True)
+        # Не берем данные строки в которых название потока отсутствует.
+        self.mapping_list = self.mapping_list.query("flow_name != ''")
+
         # Удаляем данные, которые не попадают в фильтр из файла конфигурации.
         # Список шаблонов имен потоков и/или имен потоков, которые будут обработаны.
         wf_templates_list = Config.config.get('wf_templates_list', list('.+'))
-
         # Список потоков, имена которых соответствуют шаблонам
         pattern = '|'.join(wf_templates_list)
-        # Оставляем только строки, потоки в которых соответствуют шаблонам
+        # Оставляем только строки, название потока в которых соответствуют шаблонам
         self.mapping_list = self.mapping_list.query(f"flow_name.str.match('{pattern}')")
 
         # Заменяем NaN на пустые строки
-        self.mapping_list['version_end'] = self.mapping_list['version_end'].fillna(value="")
-        self.mapping_list['distribution_field'] = self.mapping_list['distribution_field'].fillna(value="")
-        self.mapping_list['comment'] = self.mapping_list['comment'].fillna(value="")
+        self.mapping_list.fillna({'version_end': ""}, inplace=True)
+        self.mapping_list.fillna({'distribution_field': ""}, inplace=True)
+        self.mapping_list.fillna({'comment': ""}, inplace=True)
+        self.mapping_list.fillna({'scd_type': ""}, inplace=True)
 
 
         # Не берем строки, в которых поле version_end не пустое
@@ -191,10 +196,18 @@ class MappingMeta:
         self.mapping_list.sort_values(by=['flow_name', 'algorithm_uid'], inplace=True)
 
         # Детали загрузок Src-RDV --------------------------------------------------------------------------------------
+
+        # Список типов полей в источнике, которые (типы) будут переименованы
+        src_datatype_aliases: dict = Config.field_type_list.get('src_datatype_aliases', dict())
+        if len(src_datatype_aliases) == 0:
+            Config.is_warning = True
+            logging.warning('Не найден параметр "src_datatype_aliases" в файле конфигурации')
+            logging.warning("Замена типов полей источника производится не будет")
+
+
         self.mapping_df = _generate_mapping_df(file_data=byte_data, sheet_name='Детали загрузок Src-RDV')
 
         # Оставляем только строки, в которых заполнено поле 'Tgt_table'
-        # self.mapping_df = self.mapping_df.dropna(subset=['tgt_table'])
         self.mapping_df.dropna(subset=['tgt_table'], inplace=True)
 
         # Заменяем NaN на пустые строки в колонке 'version_end'
@@ -215,13 +228,18 @@ class MappingMeta:
 
         self.mapping_df['tgt_attr_datatype'] = self.mapping_df['tgt_attr_datatype'].fillna(value="").str.strip().str.lower()
 
+        # Выполняем замену типов данных источника, если в src_datatype_aliases есть "пара"src_datatype_aliases
+        self.mapping_df.replace(to_replace={'src_attr_datatype': src_datatype_aliases}, inplace=True)
+
         # Заполняем признак 'tgt_attr_mandatory'.
         # При чтении данных Панда заменяет строку 'null' на значение 'nan'. Поэтому производим "обратную" замену ...
         self.mapping_df.fillna({'tgt_attr_mandatory': "null"}, inplace=True)
         # Заменяем "\xa0" на "null" (и такое бывает)
         self.mapping_df.replace({'tgt_attr_mandatory': "\xa0"}, value="null", inplace=True)
+        self.mapping_df['tgt_attr_mandatory'] = self.mapping_df['tgt_attr_mandatory'].str.strip().str.lower()
 
-        # Заменяем значения NaN на пустые строки, что-бы дальше "не мучится"
+
+        # Заменяем значения NaN на пустые строки
         self.mapping_df['tgt_pk'] = self.mapping_df['tgt_pk'].fillna(value="").str.strip().str.lower()
 
         self.mapping_df['comment'] = self.mapping_df['comment'].fillna(value="").str.strip()
@@ -229,6 +247,8 @@ class MappingMeta:
         self.mapping_df['attr:conversion_type'] = self.mapping_df['attr:conversion_type'].fillna(value="").str.strip()
 
         self.mapping_df['attr_nulldefault'] = self.mapping_df['attr_nulldefault'].fillna(value="").str.strip()
+
+        self.mapping_df['attr:conversion_type'] = self.mapping_df['attr:conversion_type'].str.strip().str.lower()
 
         # Поле attr:nulldefault переименовано в attr_nulldefault для того, что-бы избежать ошибок внутри query()
         # Экранировать "обратной кавычкой" получается только одно поле с пробелами в названии
@@ -260,9 +280,6 @@ class MappingMeta:
         self.mapping_df = self.mapping_df.assign(_rk=lambda _df: _df['tgt_pk'].str.
                                                  extract(r'(^|,)(?P<_rk>rk|bk)(,|$)')['_rk'])
 
-        # Заменяем значения NaN на пустые строки, что-бы дальше "не мучиться"
-        self.mapping_list['scd_type'] = self.mapping_list['scd_type'].fillna(value="")
-
         # Проверяем поля expression
         exp_err = self.mapping_df.query("expression != '' and src_attribute != ''")
         if len(exp_err) > 0:
@@ -293,7 +310,7 @@ class MappingMeta:
         Возвращает список (DataFrame) строк для заданной целевой таблицы
         """
         df = self.mapping_df[self.mapping_df['src_table'] == src_table].dropna(how="all")
-        df = df[['src_table', 'src_attribute', 'src_attr_datatype', 'src_pk', 'comment']]
+        df = df[['src_table', 'src_attribute', 'src_attr_datatype', 'src_pk', 'comment', 'tgt_attribute', 'tgt_attr_datatype']]
         return df
 
     def get_src_cd_by_table(self, tgt_table: str) -> str | None:

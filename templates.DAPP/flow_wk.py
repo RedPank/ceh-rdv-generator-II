@@ -1,3 +1,4 @@
+# Created: {{ ctx.created }}
 {# Файл python - зачем-то нужен AF для работы потока #}
 from pathlib import Path
 from ceh_core_rdv.app import dag_builder
