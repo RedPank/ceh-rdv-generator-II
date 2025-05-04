@@ -235,29 +235,27 @@ field_type_list:
 
   # Список возможных значений колонки "Src_attr_datatype"
   # Фрейм поддерживает ограниченное количество типов.
-  src_attr_datatype: ['boolean','text', 'string', 'timestamp', 'smallint', 'integer', 'bigint', 'decimal', 'numeric']
+  src_attr_datatype: ['boolean','text', 'string', 'timestamp', 'smallint', 'integer', 'bigint', 'numeric']
 
   # Список возможных значений колонки "Tgt_attr_datatype"
   # Фрейм поддерживает ограниченное количество типов.
   tgt_attr_datatype: ['text', 'timestamp', 'char(32)', 'smallint', 'integer', 'bigint', 'boolean', 'date', 'numeric']
 
   # Список "корреспонденций" типов данных источника и целевой таблицы
-  # Если "пара" типа данных источника и целевой таблицы (из EXCEL) не найдена в списке, то выдается
+  # Если "пара" типа данных источника и целевой таблицы не найдена в списке, то выдается
   # "мягкое" предупреждение
   corresp_datatype : {
             'boolean': ['boolean'],
-            'text': ['text'],
-            'string': ['text'],
+            'text': ['text', 'timestamp', 'bigint'],
             'timestamp': ['timestamp'],
             'smallint': ['smallint'],
             'integer': ['integer'],
             'bigint': ['bigint'],
-            'decimal': ['numeric'],
             'numeric' : ['numeric'],
             'date': ['date']
   }
 
-  # Список типов данных в источнике, которые будут заменены на "правильные"
+  # Список типов данных в источнике (описанные в EXCEL), которые будут заменены на "правильные"
   # Тип данных в "Src_attr_datatype" : "Правильный" тип
   # Замена производится ДО выполнения проверки корректности типов
   src_datatype_aliases: {

@@ -88,8 +88,8 @@ mappings:
       {%- if mart.mart_hub_list|length > 0 %}
       hub_map:
         {%- for hub in mart.mart_hub_list %}
-        - rk_field: {{ hub.rk_field }} 
-          target: {{ hub.short_name }}
+        - target: {{ hub.short_name }}
+          rk_field: {{ hub.mart_retain_key }} 
           business_key_schema: {{ hub.business_key_schema }}
           on_full_null: {{ hub.on_full_null }}
           field_map:

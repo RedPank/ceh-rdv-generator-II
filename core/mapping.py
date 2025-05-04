@@ -136,7 +136,7 @@ class MappingMeta:
     def __init__(self, byte_data):
 
         is_error: bool = False
-        tgt_pk: set = {'pk', 'bk', 'rk'}
+        tgt_pk: set = {'pk', 'bk', 'rk', 'fk'}
 
         # Ф-ия для проверки "состава" поля 'tgt_pk'
         def test_tgt_pk(a) -> bool:
@@ -273,12 +273,22 @@ class MappingMeta:
             is_error = True
 
         # "Разворачиваем" колонку Tgt_PK в отдельные признаки
-        self.mapping_df = self.mapping_df.assign(_pk=lambda _df: _df['tgt_pk'].str.
-                                                 extract('(^|,)(?P<_pk>pk)(,|$)')['_pk'])
+        # self.mapping_df = self.mapping_df.assign(_pk=lambda _df: _df['tgt_pk'].str.
+        #                                          extract('(^|,)(?P<_pk>pk)(,|$)')['_pk'])
+
+        # Добавляем колонку 'is_pk'.
+        # На основе значения колонки 'is_pk' вычисляется признак в хаб-е "is_bk". НЕ ПУТАТЬ!!!
+        self.mapping_df = (
+            self.mapping_df.assign(is_pk=
+                                   lambda x: x['tgt_pk'].apply(
+                                       lambda y: (re.search('(^|,)(?P<_pk>pk)(,|$)', y) is not None)
+                                       if type(y) is str
+                                       else False)))
+
 
         # Признак формирования значения hub из поля _rk/_id
-        self.mapping_df = self.mapping_df.assign(_rk=lambda _df: _df['tgt_pk'].str.
-                                                 extract(r'(^|,)(?P<_rk>rk|bk)(,|$)')['_rk'])
+        # self.mapping_df = self.mapping_df.assign(_rk=lambda _df: _df['tgt_pk'].str.
+        #                                          extract(r'(^|,)(?P<_rk>rk|bk)(,|$)')['_rk'])
 
         # Проверяем поля expression
         exp_err = self.mapping_df.query("expression != '' and src_attribute != ''")

@@ -44,7 +44,7 @@ ref_fields: []
 {%- if tgt.hub_fields|length > 0 %}
 hub_fields:
 {%- for hub_field in tgt.hub_fields %}
-  - name: {{ hub_field.rk_field }}
+  - name: {{ hub_field.mart_retain_key }}
     hub_table: {{ hub_field.hub_name_only }}
     hub_schema: {{ hub_field.schema }}
     is_bk: {{ hub_field.is_bk }}

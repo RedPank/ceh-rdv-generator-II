@@ -183,14 +183,14 @@ class MartField:
         tgt_field:str = str(row["tgt_attribute"]).strip().lower()
         tgt_field_type:str = str(row["tgt_attr_datatype"]).strip().lower()
         expression: str = str(row["expression"]).strip().removeprefix('=')
-        is_pk:bool = str(row["_pk"]).strip().lower() == 'pk'
+        # is_pk:bool = str(row["_pk"]).strip().lower() == 'pk'
+        is_pk = row["is_pk"]
 
         is_hub_field: bool = False
-        if (type(row['attr:bk_object']) == str
-                and len(row['attr:bk_object'].split('.')) <= 2
-                and row['attr:bk_object'].split('.')[2] == tgt_field):
+        if row['attr:conversion_type'] == 'hub':
+                # and len(row['attr:bk_object'].split('.')) <= 2
+                # and row['attr:bk_object'].split('.')[2] == tgt_field):
             is_hub_field = True
-
 
         value = src_attr
 
@@ -241,7 +241,7 @@ class MartField:
 
 class HubMartField:
     def __init__(self, hub_table: str, rk_field: str, business_key_schema: str, on_full_null: str, src_attribute: str,
-                 src_type: str, field_type: str, is_bk: bool, schema: str, expression: str):
+                 src_type: str, field_type: str, is_bk: bool, schema: str, expression: str, mart_retain_key:str):
 
         self.schema = schema            # Схема в базе данных, где расположена хаб-таблица
 
@@ -253,15 +253,18 @@ class HubMartField:
         self.resource_cd = "ceh." + self.schema + '.' + self.hub_table
         self.short_name = create_short_name(name=self.hub_table, short_name_len=22, random_str_len=6)
 
+        # Название поля хаба, в котором хранится retain key
         self.rk_field = rk_field
         self.id_field = self.rk_field.removesuffix('_rk') + '_id'
+
+        # Название поля в марте, в которое будет записываться значение retain key хаба
+        self.mart_retain_key = mart_retain_key
 
         self.business_key_schema = business_key_schema
         self.bk_schema_name = business_key_schema
         self.on_full_null = on_full_null
         self.src_attribute = src_attribute
-        # self.expression = expression if type(expression) is str else ''
-        self.expression = ''
+        self.expression = expression if type(expression) is str else ''
         self.src_type = src_type
         self.field_type = field_type
         self.is_bk = is_bk
@@ -269,12 +272,12 @@ class HubMartField:
         self.actual_dttm_name = ''
 
         # Разбираемся со значениями
-        # if self.expression:
-        #     if self.src_type.upper() == 'TEXT':
-        #         self.expression = f"case when {self.expression} = '' then Null else {self.expression} end"
-        # else:
-        #     if self.src_type.upper() == 'TEXT':
-        #         self.expression = f"case when {src_attribute} = '' then Null else {src_attribute} end"
+        if self.expression:
+            if self.src_type.upper() == 'TEXT':
+                self.expression = f"case when {self.expression} = '' then Null else {self.expression} end"
+        else:
+            if self.src_type.upper() == 'TEXT':
+                self.expression = f"case when {src_attribute} = '' then Null else {src_attribute} end"
 
 
 class Mart:

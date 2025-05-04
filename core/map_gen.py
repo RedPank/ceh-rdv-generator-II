@@ -345,7 +345,8 @@ def mapping_generator(file_path: str, out_path: str) -> None:
                                             on_full_null=f_row['attr_nulldefault'], src_attribute=f_row['src_attribute'],
                                             src_type=f_row['src_attr_datatype'], expression=f_row['expression'],
                                             field_type=f_row['tgt_attr_datatype'],
-                                            is_bk=f_row['_pk'] == 'pk', schema=f_row['attr:bk_object'].split('.')[0])
+                                            is_bk=f_row['is_pk'], schema=f_row['attr:bk_object'].split('.')[0],
+                                            mart_retain_key=f_row['tgt_attribute'])
 
                     # Привязываем hub к описанию mart-таблицы
                     mart_mapping.add_mart_hub_list(mart_hub=mart_hub)
@@ -357,7 +358,7 @@ def mapping_generator(file_path: str, out_path: str) -> None:
                 data_base_field = DataBaseField(name=f_row["tgt_attribute"], data_type=f_row['tgt_attr_datatype'],
                                                 comment=f_row["comment"],
                                                 is_nullable=f_row["tgt_attr_mandatory"] == 'null',
-                                                is_pk=f_row["_pk"] == 'pk',
+                                                is_pk=f_row["is_pk"],
                                                 properties=properties)
 
                 target_table.add_field(field=data_base_field)
