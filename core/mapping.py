@@ -136,7 +136,7 @@ class MappingMeta:
     def __init__(self, byte_data):
 
         is_error: bool = False
-        tgt_pk: set = {'pk', 'bk', 'rk', 'fk'}
+        tgt_pk: set = {'pk'}
 
         # Ф-ия для проверки "состава" поля 'tgt_pk'
         def test_tgt_pk(a) -> bool:
@@ -266,11 +266,11 @@ class MappingMeta:
         # Проверяем состав поля 'tgt_pk'
         err_rows: pd.DataFrame = self.mapping_df[~self.mapping_df['tgt_pk'].apply(test_tgt_pk)]
         if len(err_rows) > 0:
-            logging.error(f"Неверно указаны значения в поле 'tgt_pk'")
+            logging.warning(f"В поле 'tgt_pk' указаны значения, которые не будут обрабатываться")
             for line in str(err_rows[['tgt_table', 'tgt_attribute', 'tgt_pk', 'tgt_attr_datatype']]).splitlines():
                 logging.error(line)
             logging.error(f'Допустимые значения: {tgt_pk}')
-            is_error = True
+            Config.is_warning = True
 
         # "Разворачиваем" колонку Tgt_PK в отдельные признаки
         # self.mapping_df = self.mapping_df.assign(_pk=lambda _df: _df['tgt_pk'].str.
