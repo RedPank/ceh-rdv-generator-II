@@ -1,6 +1,6 @@
 {
-    "resource_cd": "ceh.{{ ctx.schema }}.{{ ctx.table_name }}",
-    "resource_desc": "Таблица {{ ctx.schema }}.{{ ctx.table_name }}",
+    "resource_cd": "ceh.{{ tgt.schema }}.{{ tgt.table_name }}",
+    "resource_desc": "Таблица {{ tgt.schema }}.{{ tgt.table_name }}",
     "tags": {
 {%- if tags|length > 0 %}
 {%- for tag in tags %}
@@ -8,16 +8,16 @@
 {%- endfor %}
 {%- endif %}
     },
-    "features": {"domain": "{{ ctx.schema.upper() }}", "source_system": "{{ ctx.src_cd.upper() }}"},
+    "features": {"domain": "{{ tgt.schema.upper() }}", "source_system": "{{ tgt.src_cd.upper() }}"},
     "is_readonly": false,
 	"is_deleted": false,
     "datasets": [
         {
-            "name": "{{ ctx.table_name }}",
-            "schema_name": "{{ ctx.schema }}",
+            "name": "{{ tgt.table_name }}",
+            "schema_name": "{{ tgt.schema }}",
             "columns": [
-{%- if ctx.fields|length > 0 %}
-{%- for col in ctx.fields %}
+{%- if tgt.fields|length > 0 %}
+{%- for col in tgt.fields %}
               {
                 "name": "{{ col.name }}",
                 "type": "{{ col.data_type }}",
@@ -30,8 +30,8 @@
         }
     ],
      "metrics": {
-        "{{ctx.actual_dttm_name}}": {
-        "id": "ceh.{{ ctx.schema }}.{{ ctx.table_name }}:{{ctx.actual_dttm_name}}",
+        "{{tgt.actual_dttm_name}}": {
+        "id": "ceh.{{ tgt.schema }}.{{ tgt.table_name }}:{{tgt.actual_dttm_name}}",
         "query": "[.last_sources[].conf.by_src  | select(. != null) | .[] | to_entries | .[] | select((.key | endswith(\"_actual_dttm\")) and .value != \"default_value\" and .value != null).value] | min",
         "default": "default_value"
         }

@@ -24,6 +24,11 @@ anchor_subo_name: &subo_name
 # Предметная область.
 anchor_area: &area
   "application"
+
+# Источник данных
+anchor_src_cd: &src_cd
+  "MSCL"
+
 ########################################################################################################################
 
 # Список рабочих потоков в виде шаблонов regular expression,
@@ -91,6 +96,7 @@ team: *team
 subo: *subo
 subo_name: *subo_name
 area: *area
+src_cd: *src_cd
 
 # Набор строк для секции metadata.tags в файлах потока cf/wf
 tags:
@@ -126,6 +132,8 @@ regexp:
   bk_object_regexp: "^([a-z][a-z0-9_]*)(\\.[a-z][a-z0-9_]*)(\\.[a-z][a-z0-9_]*){0,1}$"
   # Список возможных значений поля attr:nulldefault для хабов
   hub_nulldefault: "^(new_rk|good_default|delete_record)$"
+  # Короткое имя - сокращение имени таблицы/ресурса и т.п.
+  short_name_regexp: "^[a-z][a-z0-9_]{2,22}$"
 
 ########################################################################################################################
 
@@ -174,8 +182,6 @@ setting_up_field_lists:
     - hash_diff
     - invalid_id
     - version_id
-#    - deleted_flg
-    - valid_flg
 
   # Список полей с описанием, которые БУДУТ добавлены в секцию field_map шаблона flow.wk.yaml.
   # Добавление идет после исключения (список ignore_field_map_ctx_list).
@@ -194,7 +200,7 @@ setting_up_field_lists:
 
 # Определение поля даты в таблице-источнике по которому будет выполняться фильтрация новых записей.
 # Используется в шаблоне flow.wk.yaml.
-processed_dt: commit_ts
+processed_dt: id_updtime
 # Отсечение даты: microseconds,milliseconds,second,minute,hour,day,week,month,quarter,year,decade,,centurymillennium
 processed_dt_conversion: second
  
@@ -230,7 +236,8 @@ field_type_list:
     #changetype: ["string"],
     #hdp_processed_dttm: ["timestamp"],
     #processed_dt: ["timestamp"], 
-    commit_ts: ["timestamp"], 
+    commit_ts: ["timestamp"]
+
   }
 
   # Список возможных значений колонки "Src_attr_datatype"
@@ -263,8 +270,19 @@ field_type_list:
     'varchar': 'text',
     'int': 'integer',
     'decimal': 'numeric',
-    'bool': 'boolean'
+    'bool': 'boolean',
+    'number': 'numeric'
   }
+
+  # Список типов данных в приемнике (описанные в EXCEL), которые будут заменены на "правильные"
+  # Тип данных в "Tgt_attr_datatype" : "Правильный" тип
+  # Замена производится ДО выполнения проверки корректности типов
+  tgt_datatype_aliases: {
+    'number': 'numeric',
+    'decimal': 'numeric',
+    'number(10, 0)': 'numeric'
+  }
+
 
 # Список имен колонок на листах файла EXCEL, которые должны присутствовать
 # Названия колонок используются в программе, так что менять их без изменения кода нельзя

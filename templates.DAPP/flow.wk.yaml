@@ -29,6 +29,8 @@ targets:
     resource_cd: {{target.resource_cd}}
     schema: {{target.schema}}
     table: {{target.table}}
+    strategies:
+      calc_valid_flg: base
 {% endfor -%}
 
 {%- for hub in ctx.hubs %}

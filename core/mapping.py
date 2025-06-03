@@ -171,6 +171,8 @@ class MappingMeta:
         self.mapping_list.fillna({'comment': ""}, inplace=True)
         self.mapping_list.fillna({'scd_type': ""}, inplace=True)
 
+        self.mapping_list['src_table'] = self.mapping_list['src_table'].str.strip().str.lower()
+
 
         # Не берем строки, в которых поле version_end не пустое
         self.mapping_list = self.mapping_list.query("version_end == ''")
@@ -204,6 +206,13 @@ class MappingMeta:
             logging.warning('Не найден параметр "src_datatype_aliases" в файле конфигурации')
             logging.warning("Замена типов полей источника производится не будет")
 
+        # Список типов полей в приемнике, которые (типы) будут переименованы
+        tgt_datatype_aliases: dict = Config.field_type_list.get('tgt_datatype_aliases', dict())
+        if len(tgt_datatype_aliases) == 0:
+            Config.is_warning = True
+            logging.warning('Не найден параметр "tgt_datatype_aliases" в файле конфигурации')
+            logging.warning("Замена типов полей источника производится не будет")
+
 
         self.mapping_df = _generate_mapping_df(file_data=byte_data, sheet_name='Детали загрузок Src-RDV')
 
@@ -218,6 +227,8 @@ class MappingMeta:
         self.mapping_df = self.mapping_df.query(f"tgt_table in {self._tgt_tables_list}")
 
         # Преобразуем значения в "нужный" регистр
+        self.mapping_df['src_table'] = self.mapping_df['src_table'].fillna(value="").str.strip().str.lower()
+
         self.mapping_df['src_attribute'] = self.mapping_df['src_attribute'].fillna(value="").str.strip().str.lower()
 
         self.mapping_df['src_attr_datatype'] = self.mapping_df['src_attr_datatype'].fillna(value="").str.strip().str.lower()
@@ -230,6 +241,9 @@ class MappingMeta:
 
         # Выполняем замену типов данных источника, если в src_datatype_aliases есть "пара"src_datatype_aliases
         self.mapping_df.replace(to_replace={'src_attr_datatype': src_datatype_aliases}, inplace=True)
+
+        # Выполняем замену типов данных приемника, если в tgt_datatype_aliases есть "пара" tgt_datatype_aliases
+        self.mapping_df.replace(to_replace={'tgt_attr_datatype': tgt_datatype_aliases}, inplace=True)
 
         # Заполняем признак 'tgt_attr_mandatory'.
         # При чтении данных Панда заменяет строку 'null' на значение 'nan'. Поэтому производим "обратную" замену ...
@@ -277,7 +291,7 @@ class MappingMeta:
         #                                          extract('(^|,)(?P<_pk>pk)(,|$)')['_pk'])
 
         # Добавляем колонку 'is_pk'.
-        # На основе значения колонки 'is_pk' вычисляется признак в хаб-е "is_bk". НЕ ПУТАТЬ!!!
+        # На основе значения колонки 'is_pk' вычисляется признак в хаб-е "is_bk". НЕ ПУТАТЬ ЭТИ ПРИЗНАКИ!!!
         self.mapping_df = (
             self.mapping_df.assign(is_pk=
                                    lambda x: x['tgt_pk'].apply(

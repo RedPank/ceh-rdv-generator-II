@@ -10,7 +10,8 @@ from core.exceptions import IncorrectMappingException
 
 
 def create_short_name(name: str, short_name_len: int, random_str_len: int,
-                      char_set: str = string.ascii_lowercase + string.digits):
+                      char_set: str = string.ascii_lowercase + string.digits,
+                      always_expand_name: bool = False):
     """
     Функция формирует "короткое имя" на основе значения в переменной name
     Если длина name меньше чем short_name_len, то ф-ия возвращает name без преобразования.
@@ -20,18 +21,19 @@ def create_short_name(name: str, short_name_len: int, random_str_len: int,
         name: Имя, на основе которого надо сформировать "короткое имя".
         short_name_len: Длина "короткого имени", которое надо сформировать.
         random_str_len: Длина рандомной строки, которая используется для формирования "короткого имени".
-        char_set: Набор символов, на основе которого формируется рандомная строка.
+        char_set: Набор символов, на основе которого формируется "рандомная" строка.
+        always_expand_name: Если expand_name is True то короткое имя всегда формируется с использованием "рандомной" строки.
 
     Returns: Строка "Короткое имя"
     """
 
     short_name: str
 
-    if len(name) <= short_name_len:
-        short_name = name
-    else:
+    if len(name) > short_name_len or always_expand_name:
         short_name = name[0:short_name_len - random_str_len]
         short_name = (short_name + ''.join(random.choice(char_set) for _ in range(random_str_len)))
+    else:
+        short_name = name
 
     return short_name
 
@@ -274,10 +276,10 @@ class HubMartField:
         # Разбираемся со значениями
         if self.expression:
             if self.src_type.upper() == 'TEXT':
-                self.expression = f"case when {self.expression} = '' then Null else {self.expression} end"
+                self.expression = f"case when {self.expression} = '' then null else {self.expression} end"
         else:
             if self.src_type.upper() == 'TEXT':
-                self.expression = f"case when {src_attribute} = '' then Null else {src_attribute} end"
+                self.expression = f"case when {src_attribute} = '' then null else {src_attribute} end"
 
 
 class Mart:

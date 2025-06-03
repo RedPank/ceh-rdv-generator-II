@@ -91,7 +91,7 @@ class ExportData:
         for target_table in self.flow_context.target_tables:
             if target_table.table_type == 'MART':
                 file_path = os.path.join(exp_path, 'ceh.' + target_table.schema + '.' + target_table.table_name + '.json')
-                output = template.render(ctx=target_table)
+                output = template.render(ctx=self.flow_context, tgt=target_table)
 
             with open(file_path, "w", encoding="utf-8") as f:
                 f.write(output)
@@ -144,7 +144,7 @@ class ExportData:
             if target_table.table_type == 'MART':
                 file_path = os.path.join(exp_path, 'acc.' + target_table.file_name + '.sql')
                 template = self.env.get_template('f_gen_access_view.sql')
-                output = template.render(ctx=target_table)
+                output = template.render(ctx=self.flow_context, tgt=target_table)
 
                 with open(file_path, "w", encoding="utf-8") as f:
                     f.write(output)
