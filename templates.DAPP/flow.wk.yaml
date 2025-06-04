@@ -1,7 +1,7 @@
 # Created {{ ctx.created }}
 name: {{ ctx.flow_name }}
 type: WORK_FLOW
-schema_version: '1.14'
+schema_version: '{{ ctx.work_flow_schema_version }}'
 version: 1
 tags:
     {%- for tag in ctx.tags %}
@@ -11,14 +11,13 @@ tags:
 orientation: TB
 
 transaction:
-  operator_default_timeout: 1800
   resources_lock_attempt_timeout: 60
   resources_lock_attempts: 30
 
 sources:
 {%- for source in ctx.sources %}
   - short_name: {{ source.short_name }}
-    resource_cd: {{ source.system }}.{{ source.schema }}.{{ source.table }}
+    resource_cd: {{ source.uni_res }}
     type: DB_TABLE
     object: {{source.table}}
 {%- endfor %}
@@ -29,8 +28,6 @@ targets:
     resource_cd: {{target.resource_cd}}
     schema: {{target.schema}}
     table: {{target.table}}
-    strategies:
-      calc_valid_flg: base
 {% endfor -%}
 
 {%- for hub in ctx.hubs %}
@@ -41,6 +38,7 @@ targets:
 {% endfor -%}
 
 local_metrics:
+{# Берем "первую" метрику. Для всех таблиц в потоке, метрика должна быть одинаковой #}
 {% set local_metric = ctx.local_metrics|first()%}
   wf_dataset_max_date_to:
     target: stage_T_input

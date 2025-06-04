@@ -120,10 +120,11 @@ class ExportData:
                 f.write(output)
 
         # Ресурсы хабов. Помещаются в каталог src ----------------------------------------------------------------------
+        # Формируются 2 одинаковых файла с разными именами
         exp_path = os.path.join(self.path, r"src\ceh-etl\_resources\ceh\rdv")
         os.makedirs(exp_path, exist_ok=True)
         template = self.env.get_template('resource.ceh.hub.bk_schema.json')
-        template2 = self.env.get_template('resource.ceh.hub.json')
+        # template2 = self.env.get_template('resource.ceh.hub.json')
         for hub in self.flow_context.hubs:
 
             file_path = os.path.join(exp_path, 'ceh.' + hub.full_table_name + '.' + hub.business_key_schema + '.json')
@@ -131,13 +132,13 @@ class ExportData:
             with open(file_path, "w", encoding="utf-8") as f:
                 f.write(output)
 
+            # Заготовка общего файла для всех "business_key_schema"
             file_path = os.path.join(exp_path, 'ceh.' + hub.full_table_name + '.json')
-            output2 = template.render(ctx=hub, tags=self.flow_context.resource_tags)
             with open(file_path, "w", encoding="utf-8") as f:
                 f.write(output)
 
 
-        # Необязательные файлы - Скрипты формирования акцессоров для mart-таблиц ---------------------------------------
+        # Скрипты формирования акцессоров для mart-таблиц --------------------------------------------------------------
         exp_path = os.path.join(self.path, r"src")
         os.makedirs(exp_path, exist_ok=True)
         for target_table in self.flow_context.target_tables:

@@ -1,13 +1,13 @@
 {
     "resource_cd": "ceh.{{ tgt.schema }}.{{ tgt.table_name }}",
     "resource_desc": "Таблица {{ tgt.schema }}.{{ tgt.table_name }}",
-    "tags": {
-{%- if tags|length > 0 %}
-{%- for tag in tags %}
+    "tags": [
+{%- if ctx.resource_tags|length > 0 %}
+{%- for tag in ctx.resource_tags %}
         {{tag}}{%- if not loop.last -%},{% endif -%}
 {%- endfor %}
 {%- endif %}
-    },
+    ],
     "features": {"domain": "{{ tgt.schema.upper() }}", "source_system": "{{ tgt.src_cd.upper() }}"},
     "is_readonly": false,
 	"is_deleted": false,
@@ -16,8 +16,8 @@
             "name": "{{ tgt.table_name }}",
             "schema_name": "{{ tgt.schema }}",
             "columns": [
-{%- if tgt.fields|length > 0 %}
-{%- for col in tgt.fields %}
+{%- if tgt.resource_ceh_fields|length > 0 %}
+{%- for col in tgt.resource_ceh_fields %}
               {
                 "name": "{{ col.name }}",
                 "type": "{{ col.data_type }}",

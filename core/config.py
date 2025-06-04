@@ -21,12 +21,15 @@ class Config:
     excel_data_definition: dict
     setting_up_field_lists: dict
     out_path: str
+
     log_file: str
+    log_level: str
+    log_viewer: list
+    log_file_cmd: str
+
     author: str
     data_capture_mode: str
     delta_mode: str
-    log_viewer: list
-    log_file_cmd: str
     env: any
     templates_path: str
     excel_file: str
@@ -34,6 +37,10 @@ class Config:
     is_warning: bool = False
     is_error: bool = False
     colorlog: bool = False
+
+    # Версия структуры yaml-файлов wf - потока (WorkFlow).
+    # Программа не анализирует этот номер.
+    work_flow_schema_version: str = "1.18"
 
     @staticmethod
     def load_config(config_name: str):
@@ -103,6 +110,8 @@ class Config:
             else:
                 raise FileExistsError(f'Объект "{Config.log_file}" не является файлом')
         Config.log_file = log_file
+
+        Config.log_level = Config.config.get('log_level', 'INFO')
 
         Config.log_viewer = Config.config.get('log_viewer')
         Config.log_viewer = [arg.replace('{log_file}', f'{Config.log_file}') for arg in Config.log_viewer]

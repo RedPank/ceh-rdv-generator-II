@@ -57,7 +57,7 @@ def _generate_mapping_df(file_data: bytes, sheet_name: str):
 
             alias: str | None = aliases_list.get(col_name, None)
             if alias and alias in mapping.columns.values:
-                logging.info(f"Имя колонки '{alias}' на листе '{sheet_name}' заменено на '{col_name}'")
+                logging.debug(f"Имя колонки '{alias}' на листе '{sheet_name}' заменено на '{col_name}'")
                 mapping = mapping.rename(columns={alias: col_name})
 
             else:

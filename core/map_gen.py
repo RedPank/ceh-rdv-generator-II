@@ -197,10 +197,10 @@ def mapping_generator(file_path: str, out_path: str) -> None:
             dupl = mapping.get_duplicate_list(df=src_mapping, column_name='src_attribute')
 
             if len( dupl ) > 0:
-                logging.warning(f"В таблице-источнике {sh_data.src_full_name} указаны повторяющиеся названия полей")
-                logging.warning(str(dupl))
-                logging.warning('При формировании файла описания таблицы источника дубликаты будут удалены')
-                Config.is_warning = True
+                logging.debug(f"В таблице-источнике {sh_data.src_full_name} указаны повторяющиеся названия полей")
+                logging.debug(str(dupl))
+                logging.debug('При формировании файла описания таблицы источника дубликаты будут удалены')
+                # Config.is_warning = True
 
             # Удаляем дубликаты имен полей из списка полей таблицы-источника
             src_mapping = src_mapping.drop_duplicates(subset=['src_attribute'], keep='first')
@@ -236,7 +236,6 @@ def mapping_generator(file_path: str, out_path: str) -> None:
             flow_context.add_target(target)
 
             delta_mode = Config.config.get("delta_mode", 'new')
-            actual_dttm_name = f"{src_cd.lower()}_actual_dttm"
 
             mart_mapping: Mart = (
                 Mart(short_name=target.short_name, algorithm_uid=sh_data.algorithm_uid,
@@ -245,7 +244,7 @@ def mapping_generator(file_path: str, out_path: str) -> None:
                      source_system=sh_data.source_system, source_schema=sh_data.src_schema,
                      source_name=sh_data.src_table,
                      table_name=sh_data.tgt_table,
-                     actual_dttm_name=actual_dttm_name, src_cd=src_cd, comment=sh_data.comment)
+                     src_cd=src_cd, comment=sh_data.comment)
             )
 
             # Цикл по полям целевой таблицы
@@ -254,7 +253,7 @@ def mapping_generator(file_path: str, out_path: str) -> None:
                 mart_mapping.add_fields(copy.copy(mart_field))
 
                 if mart_field.is_hub_field:
-                    logging.warning(f"Поле '{mart_field.tgt_field}' не будет добавлено в секцию 'field_map', "
+                    logging.debug(f"Поле '{mart_field.tgt_field}' не будет добавлено в секцию 'field_map', "
                                     f"т.к. присутствует в секции 'hub_map'")
 
                 # Проверяем типы полей целевой таблицы

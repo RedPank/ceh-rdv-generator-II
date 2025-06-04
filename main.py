@@ -4,7 +4,9 @@ import logging
 import os
 import pathlib
 import tkinter
+
 import pandas as pd
+
 from core.config import Config
 from core.ui import MainWindow
 
@@ -39,7 +41,13 @@ def main() -> int:
     config_name: str = os.path.abspath(args.config)
     Config.load_config(config_name=config_name)
 
-    logging.basicConfig(level=logging.INFO, filename=Config.log_file, filemode="w",
+    level = logging.INFO
+    if Config.log_level == "INFO":
+        level = logging.INFO
+    elif Config.log_level == "DEBUG":
+        level = logging.DEBUG
+
+    logging.basicConfig(level=level, filename=Config.log_file, filemode="w",
                         format=format_str,
                         encoding='utf-8')
 

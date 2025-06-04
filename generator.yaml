@@ -24,7 +24,6 @@ anchor_subo_name: &subo_name
 # Предметная область.
 anchor_area: &area
   "application"
-
 # Источник данных
 anchor_src_cd: &src_cd
   "MSCL"
@@ -79,6 +78,8 @@ log_viewer:
 
 # Файл журнала. Если не задавать "полный" путь, то файл будет сформирован в каталоге из параметра out_path
 log_file: "generator.log"
+# Уровень детализации файла журнала. Для пользователей имеет смысл только значение "INFO"
+log_level: "INFO"
 
 delta_mode: "new"
 data_capture_mode: "increment"
@@ -151,7 +152,7 @@ setting_up_field_lists:
     - hash_diff
     - src_cd
     - version_id
-#    - deleted_flg
+    - deleted_flg
     - valid_flg
     - invalid_id
     - processed_dt
@@ -242,11 +243,14 @@ field_type_list:
 
   # Список возможных значений колонки "Src_attr_datatype"
   # Фрейм поддерживает ограниченное количество типов.
-  src_attr_datatype: ['boolean','text', 'string', 'timestamp', 'smallint', 'integer', 'bigint', 'numeric']
+  src_attr_datatype: ['varchar', 'integer', 'date', 'boolean', 'bigint', 'smallint', 'timestamp', 'text', 'jsonb',
+                      'float', 'timestamptz', 'time', 'double', 'decimal']
 
   # Список возможных значений колонки "Tgt_attr_datatype"
   # Фрейм поддерживает ограниченное количество типов.
-  tgt_attr_datatype: ['text', 'timestamp', 'char(32)', 'smallint', 'integer', 'bigint', 'boolean', 'date', 'numeric']
+  # VARCHAR, INTEGER, DATE, BOOLEAN, BIGINT, SMALLINT, TIMESTAMP, TEXT, DECIMAL, JSONB, UUID, TIMESTAMPTZ, TIME
+  tgt_attr_datatype: ['text', 'timestamp', 'char(32)', 'smallint', 'integer', 'bigint', 'boolean', 'date', 'decimal']
+
 
   # Список "корреспонденций" типов данных источника и целевой таблицы
   # Если "пара" типа данных источника и целевой таблицы не найдена в списке, то выдается
@@ -258,8 +262,9 @@ field_type_list:
             'smallint': ['smallint'],
             'integer': ['integer'],
             'bigint': ['bigint'],
-            'numeric' : ['numeric'],
-            'date': ['date']
+            'decimal' : ['decimal'],
+            'float': ['decimal'],
+            'date': ['date', 'timestamp']
   }
 
   # Список типов данных в источнике (описанные в EXCEL), которые будут заменены на "правильные"
@@ -269,18 +274,19 @@ field_type_list:
     'string': 'text',
     'varchar': 'text',
     'int': 'integer',
-    'decimal': 'numeric',
+    'double': 'decimal',
     'bool': 'boolean',
-    'number': 'numeric'
+    'number': 'decimal',
+    'numeric': 'decimal'
   }
 
   # Список типов данных в приемнике (описанные в EXCEL), которые будут заменены на "правильные"
   # Тип данных в "Tgt_attr_datatype" : "Правильный" тип
   # Замена производится ДО выполнения проверки корректности типов
   tgt_datatype_aliases: {
-    'number': 'numeric',
-    'decimal': 'numeric',
-    'number(10, 0)': 'numeric'
+    'number': 'decimal',
+    'number(10, 0)': 'decimal',
+    'numeric': 'decimal'
   }
 
 

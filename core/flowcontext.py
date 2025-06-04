@@ -2,12 +2,15 @@ import random
 import string
 from datetime import datetime
 import os
-
+import copy
 from pandas import Series
 
 from core.config import Config
 from core.exceptions import IncorrectMappingException
 
+
+def actual_date_name(src_cd: str)->str:
+    return src_cd.lower() + '_actual_dttm'
 
 def create_short_name(name: str, short_name_len: int, random_str_len: int,
                       char_set: str = string.ascii_lowercase + string.digits,
@@ -73,6 +76,7 @@ class TargetTable:
             TargetTable._ignore_hash_fields = Config.setting_up_field_lists.get('ignore_hash_set', list())
 
         self.fields = []
+        self.resource_ceh_fields = []
         self.hash_fields = []
         self.multi_fields = []
         self.hub_fields = []
@@ -85,15 +89,25 @@ class TargetTable:
         self.comment = comment
         self.table_type = table_type.upper()
         self.src_cd = src_cd
-        self.actual_dttm_name = f"{self.src_cd.lower()}_actual_dttm"
+        self.actual_dttm_name = actual_date_name(self.src_cd)
 
-        self.file_name = '.'.join([self.schema, self.table_name])
+        self.file_name = '.'.join([self.schema, self.table_name]).lower()
         self.distribution_field= distribution_field.lower()
         self.distributed_by = self.distribution_field
 
 
     def add_field(self, field: DataBaseField):
         self.fields.append(field)
+
+        # Список полей для описания ресурса.
+        # Допустимые типы полей в разных файлах потока - разные. :-()
+        ceh_field: DataBaseField = copy.deepcopy(field)
+        if field.data_type == 'decimal':
+            ceh_field.data_type = 'numeric'
+        elif field.data_type == 'char(32)':
+            ceh_field.data_type = 'text'
+
+        self.resource_ceh_fields.append(ceh_field)
 
         if field.name not in TargetTable._ignore_primary_key and field.is_pk:
             self.primary_key = self.primary_key + ',' + field.name if self.primary_key else field.name
@@ -133,11 +147,11 @@ class Source:
         self.uni_res = self.system.lower() + '.' + self.schema.lower() + '.' + self.table.lower()
         self.instance = (self.system + '_' + self.schema).lower()
         self.resource_cd = self.uni_res
-        self.actual_dttm_name = f"{src_cd.lower()}_dttm_name"
+        self.actual_dttm_name =  actual_date_name(self.src_cd)
 
         self.ceh_res = ceh_resource
 
-        self.file_name = '.'.join([self.system, self.schema, self.table, 'json'])
+        self.file_name = '.'.join([self.system, self.schema, self.table, 'json']).lower()
         self.fields = []
 
     def add_field(self, field: DataBaseField):
@@ -289,7 +303,7 @@ class Mart:
     def __init__(self, short_name: str, algorithm_uid: str, algorithm_uid_2: str, target: str, source: str,
                  delta_mode: str, processed_dt: str, algo: str, source_system: str, source_schema: str, source_name: str,
                  table_name: str,
-                 actual_dttm_name: str, src_cd: str, comment: str):
+                 src_cd: str, comment: str):
 
         Mart._ignore_field_map_ctx_list = Config.setting_up_field_lists.get('ignore_field_map_ctx_list', dict())
 
@@ -310,8 +324,8 @@ class Mart:
         self.source_system = source_system.lower()
         self.source_schema = source_schema.lower()
         self.source_name = source_name.lower()
-        self.actual_dttm_name = actual_dttm_name.lower()
         self.src_cd = src_cd
+        self.actual_dttm_name = actual_date_name(self.src_cd)
         self.comment = comment
 
 
@@ -353,6 +367,7 @@ class FlowContext:
     base_flow_name: str
     data_capture_mode: str
     delta_mode: str
+    work_flow_schema_version: str
 
 
     def __init__(self, flow_name : str):
@@ -374,7 +389,9 @@ class FlowContext:
         self.tgt_history_field = Config.setting_up_field_lists.get('tgt_history_field', '')
 
         self.username = str(os.environ.get('USERNAME', 'Unknown Author')).title()
-        self.created = f'"{datetime.now().strftime("%d %b %Y %H:%M:%S")}" by {self.username}'
+        self.author = Config.author
+        self.created = f'"{datetime.now().strftime("%d %b %Y %H:%M:%S")}" by {self.author}'
+        self.work_flow_schema_version = Config.work_flow_schema_version
 
 
     def add_source(self, source: Source):
@@ -403,9 +420,9 @@ class FlowContext:
         if type(cfg_tags) is list:
             for tag in cfg_tags:
                 if type(tag) is dict:
-                    self.resource_tags.append("'" + list(tag.keys())[0] + ':' + list(tag.values())[0] + "'")
+                    self.resource_tags.append('"' + list(tag.keys())[0] + ':' + list(tag.values())[0] + '"')
                 else:
-                    self.resource_tags.append("'" + tag + "'")
+                    self.resource_tags.append('"' + tag + '"')
 
         # Добавляем строки из файла конфигурации
         cfg_tags = Config.tags
