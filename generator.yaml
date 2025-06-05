@@ -84,6 +84,15 @@ log_level: "INFO"
 delta_mode: "new"
 data_capture_mode: "increment"
 
+# Определение поля даты в таблице-источнике по которому будет выполняться фильтрация новых записей.
+# Используется в шаблоне flow.wk.yaml.
+processed_dt: id_updtime
+# Отсечение даты: microseconds,milliseconds,second,minute,hour,day,week,month,quarter,year,decade,,centurymillennium
+processed_dt_conversion: second
+
+# Поле "историчности" в целевой таблице (поле history_field в шаблоне table.mart.yaml)
+tgt_history_field: effective_dttm
+
 # Добавляет в журнальный файл esc-последовательности для выделения цветом сообщений разных уровней.
 # Для просмотра требуется внешний редактор распознающий esc-последовательности.
 # Notepad++.exe "из коробки" не умеет выделять цветом синтаксис журнального файла или esc-последовательности.
@@ -198,16 +207,6 @@ setting_up_field_lists:
 #      value: decode(upper(op_type), 'DELETE', true, false)
 #      field_type: BOOLEAN
 
-
-# Определение поля даты в таблице-источнике по которому будет выполняться фильтрация новых записей.
-# Используется в шаблоне flow.wk.yaml.
-processed_dt: id_updtime
-# Отсечение даты: microseconds,milliseconds,second,minute,hour,day,week,month,quarter,year,decade,,centurymillennium
-processed_dt_conversion: second
- 
-# Поле "историчности" в целевой таблице (поле history_field в шаблоне table.mart.yaml)
-# Применять с осторожностью. Алгоритм обработки этого параметра фреймом мне неизвестен.
-# tgt_history_field: effective_dttm
 
 # Настройки состава/типа/названия полей
 field_type_list:

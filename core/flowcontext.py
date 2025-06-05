@@ -384,9 +384,9 @@ class FlowContext:
         self.flow_name = flow_name
         self.base_flow_name = flow_name.removeprefix('wf_')
 
-        self.processed_dt: str = Config.setting_up_field_lists.get('processed_dt', 'processed_dt')
-        self.processed_dt_conversion = Config.setting_up_field_lists.get('processed_dt_conversion', 'second')
-        self.tgt_history_field = Config.setting_up_field_lists.get('tgt_history_field', '')
+        self.processed_dt: str = Config.config.get('processed_dt', 'processed_dt_не_определено')
+        self.processed_dt_conversion = Config.config.get('processed_dt_conversion', 'processed_dt_conversion_не_определено')
+        self.tgt_history_field = Config.config.get('tgt_history_field', 'tgt_history_field_не_определено')
 
         self.username = str(os.environ.get('USERNAME', 'Unknown Author')).title()
         self.author = Config.author

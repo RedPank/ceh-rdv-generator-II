@@ -336,6 +336,12 @@ def mapping_generator(file_path: str, out_path: str) -> None:
                             f' не соответствует шаблону "{pattern_bk_object}"')
                         is_table_error = True
 
+                    if len(f_row['attr:bk_object'].split('.')) != 3:
+                        logging.warning(f"Значение в поле 'attr:bk_object' состоит не из 3-х частей: {f_row['attr:bk_object']}")
+                        logging.warning("Проверьте корректность заполнения поля")
+                        logging.warning("Ожидаемая структура поля: СХЕМА.ТАБЛИЦА.RK-ПОЛЕ или СХЕМА.ТАБЛИЦА")
+                        Config.is_warning = True
+
                     # Если rk-поле прописано в "attr:bk_object", то берем его оттуда
                     rk_field = f_row['tgt_attribute'] if len(f_row['attr:bk_object'].split('.')) == 2 else f_row['attr:bk_object'].split('.')[2]
 

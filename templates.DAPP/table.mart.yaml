@@ -19,6 +19,10 @@ columns:
 {%- endif %}
 {%- endfor %}
 
+{%- if ctx.tgt_history_field != '' %}
+history_field: {{ctx.tgt_history_field}}
+{%- endif %}
+
 {%- if tgt.hash_fields|length > 0 %}
 hash_src_fields:
 {%- for hash_field in tgt.hash_fields %}
