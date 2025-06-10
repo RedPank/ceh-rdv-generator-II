@@ -69,6 +69,11 @@ def _generate_mapping_df(file_data: bytes, sheet_name: str):
     if error:
         raise IncorrectMappingException("Ошибка в структуре данных EXCEL")
 
+    # Добавляем номер строки из EXCEL
+    indices = mapping.index.tolist()
+    mapping['excel_row_num'] = indices
+
+
     # Трансформация данных: оставляем в наборе только колонки из списка и не пустые строки
     mapping = mapping[columns_list].dropna(how='all')
 
@@ -203,15 +208,20 @@ class MappingMeta:
         src_datatype_aliases: dict = Config.field_type_list.get('src_datatype_aliases', dict())
         if len(src_datatype_aliases) == 0:
             Config.is_warning = True
-            logging.warning('Не найден параметр "src_datatype_aliases" в файле конфигурации')
-            logging.warning("Замена типов полей источника производится не будет")
+            logging.debug('Не найден параметр "src_datatype_aliases" в файле конфигурации')
+            logging.debug("Замена типов полей источника производится не будет")
 
         # Список типов полей в приемнике, которые (типы) будут переименованы
         tgt_datatype_aliases: dict = Config.field_type_list.get('tgt_datatype_aliases', dict())
         if len(tgt_datatype_aliases) == 0:
-            Config.is_warning = True
-            logging.warning('Не найден параметр "tgt_datatype_aliases" в файле конфигурации')
-            logging.warning("Замена типов полей источника производится не будет")
+            logging.debug('Не найден параметр "tgt_datatype_aliases" в файле конфигурации')
+            logging.debug("Замена типов полей источника производится не будет")
+
+
+        ceh_aliases: dict = Config.field_type_list.get('ceh_datatype_aliases', dict())
+        if len(ceh_aliases) == 0:
+            logging.debug('Не найден параметр "ceh_datatype_aliases" в файле конфигурации')
+            logging.debug("Замена типов полей для ресурсов производится не будет")
 
 
         self.mapping_df = _generate_mapping_df(file_data=byte_data, sheet_name='Детали загрузок Src-RDV')

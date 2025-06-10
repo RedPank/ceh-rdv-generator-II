@@ -16,6 +16,9 @@ class MainWindow(tk.Tk):
     def __init__(self):
         super().__init__()
 
+        # Скрываем окно, что-бы не было "мелькания" при пере-позиционировании окна
+        self.withdraw()
+
         author: str = Config.author
         self.file_path = tk.StringVar(value=Config.excel_file)
 
@@ -28,44 +31,46 @@ class MainWindow(tk.Tk):
             padx=5,  # Задаём отступ по горизонтали.
             pady=5,  # Задаём отступ по вертикали.
             borderwidth=1,
-            relief=SOLID
+            relief="solid"
         )
         frame.pack(anchor='nw', fill='both', padx=5, pady=10)
 
-        file_path_text = ttk.Entry(
-            frame,
-            textvariable=self.file_path,
-            font=("Arial", 10),
-            state='readonly')
-        file_path_text.pack(fill=tk.X, padx=25, pady=10)
+        # file_path_text = ttk.Entry(
+        #     frame,
+        #     textvariable=self.file_path,
+        #     font=("Arial", 10),
+        #     state='readonly')
+        # file_path_text.pack(fill=tk.X, padx=25, pady=10)
 
-        open_file_dialog_button = ttk.Button(
-            frame,
-            text="Выбрать EXCEL-файл с маппингом",
-            command=self._setup_file_path
-        )
-        open_file_dialog_button.pack(fill=tk.X, padx=25, pady=0)
+        # open_file_dialog_button = ttk.Button(
+        #     frame,
+        #     text="Выбрать EXCEL-файл с маппингом",
+        #     command=self._setup_file_path
+        # )
+        # open_file_dialog_button.pack(fill=tk.X, padx=25, pady=0)
 
         # Дополнительная информация
-        text_info: str = (f'Конфиг:  {Config.config_file}\n'
-                          f'Шаблоны: {Config.templates_path}\n'
-                          '\n'
-                          f'Каталог: {Config.out_path}\n'
-                          f'Журнал:  {Config.log_file}\n'
+        text_info: list = [f'Маппинг: {self.file_path.get()}\n',
+                          '\n',
+                          f'Конфиг:  {Config.config_file}\n',
+                          f'Шаблоны: {Config.templates_path}\n',
+                          '\n',
+                          f'Каталог: {Config.out_path}\n',
+                          f'Журнал:  {Config.log_file}\n',
                           f'Автор:   {author}\n'
-                          )
-        self.info_text = tk.StringVar(value=text_info)
-        label_info = tk.Text(frame, font=("Courier New", 9), height=6)
-        label_info.insert(index=tk.END, chars=text_info)
-        label_info.configure(state=tk.DISABLED)
-        label_info.pack(fill=tk.X, padx=25, pady=10)
+                          ]
+        self.info_text = tk.StringVar(value="".join(text_info))
+        label_info = tk.Text(frame, font=("Courier New", 11), height=8)
+        label_info.insert(index=tk.END, chars=self.info_text.get())
+        label_info.configure(state="disabled")
+        label_info.pack(fill="x", padx=25, pady=10)
 
         # Фрейм кнопок
         frame_key = tk.Frame(frame,  # Обязательный параметр, который указывает окно для размещения Frame.
                              padx=5,  # Задаём отступ по горизонтали.
                              pady=5,  # Задаём отступ по вертикали.
                              borderwidth=0,
-                             relief=SOLID
+                             relief="solid"
                              )
         frame_key.pack(anchor='nw', fill='both', padx=5, pady=5)
         frame_key.columnconfigure(0, weight=1)
@@ -110,7 +115,7 @@ class MainWindow(tk.Tk):
         msg: str
 
         if not self.file_path.get():
-            showerror("Ошибка", "EXCEL-файл с описанием данных не выбран")
+            showerror("Ошибка", "EXCEL-файл с описанием данных не определен")
             return
 
         if not all((

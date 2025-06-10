@@ -55,7 +55,6 @@ out_path: "C:\\Projects\\rdv"
 
 # Имя файла EXCEL с маппингом потоков дял отображения в диалог выбора.
 # В диалоге можно выбрать любой другой файл маппинга для обработки.
-#excel_file: "C:\\Projects\\rdv\\Маппинг_ЦЕХ_RDV_SAVC_v8.0_ (1).xlsx"
 excel_file: "C:\\Projects\\rdv\\Маппинг_ЦЕХ_RDV_BOOP_v2.1_old.xlsx"
 
 # Ссылка на каталог с шаблонами.
@@ -72,13 +71,14 @@ log_viewer:
   - "{log_file}"
 
 # Visual Studio Code.
-#  - "C:\\Users\\ablagov\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+#  - "C:\\Users\\current_user\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
 #  - "-r"
 #  - "{log_file}"
 
 # Файл журнала. Если не задавать "полный" путь, то файл будет сформирован в каталоге из параметра out_path
 log_file: "generator.log"
-# Уровень детализации файла журнала. Для пользователей имеет смысл только значение "INFO"
+# Уровень детализации файла журнала: "DEBUG" или "INFO".
+# Для пользователей имеет смысл только значение "INFO"
 log_level: "INFO"
 
 delta_mode: "new"
@@ -140,7 +140,7 @@ regexp:
   bk_schema_regexp: "^[a-zA-Z][a-zA-Z0-9_-]*$"
   # Название таблицы из колонки Attr:BK_Object
   bk_object_regexp: "^([a-z][a-z0-9_]*)(\\.[a-z][a-z0-9_]*)(\\.[a-z][a-z0-9_]*){0,1}$"
-  # Список возможных значений поля attr:nulldefault для хабов
+  # Список возможных значений поля "attr:nulldefault" для хабов
   hub_nulldefault: "^(new_rk|good_default|delete_record)$"
   # Короткое имя - сокращение имени таблицы/ресурса и т.п.
   short_name_regexp: "^[a-z][a-z0-9_]{2,22}$"
@@ -152,7 +152,7 @@ regexp:
 setting_up_field_lists:
   # Список названий полей, которые НЕ будут использоваться для формирования hash_src_fields
   # По поводу src_cd нет однозначного понимания ...
-  # deleted_flg используется для формирования hash
+  # По поводу deleted_flg нет однозначного понимания ...
   ignore_hash_set:
     - effective_date
     - effective_dttm
@@ -185,7 +185,7 @@ setting_up_field_lists:
 
   # Список полей целевой таблицы, которые НЕ будут добавлены в секцию field_map шаблона flow.wk.yaml.
   # Исключение полей из списка идет ДО добавления полей из секции add_field_map_ctx_list.
-  # Не включать поля, которые присутствуют в теге tgt_history_field (для ODS).
+  # Не включать поля, которые присутствуют в теге tgt_history_field.
   ignore_field_map_ctx_list:
     - valid_flg
     - src_cd
@@ -288,6 +288,14 @@ field_type_list:
     'numeric': 'decimal'
   }
 
+  # Список типов данных в приемнике, которые будут заменены на "правильные"
+  # типы данных при формировании файла по шаблону resource.ceh.mart.json
+  # Кто-бы мог подумать, что в разных частях фрейма аналогичные типы данных называются по-разному!
+  ceh_datatype_aliases: {
+    'decimal': 'numeric',
+    'char(32)': 'text'
+
+  }
 
 # Список имен колонок на листах файла EXCEL, которые должны присутствовать
 # Названия колонок используются в программе, так что менять их без изменения кода нельзя

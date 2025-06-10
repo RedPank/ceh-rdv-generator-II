@@ -81,6 +81,28 @@ def main() -> int:
     image = tkinter.PhotoImage(file=os.path.join(resource_path, "ceh-icon.png"))
     win.iconphoto(True, image)
 
+    win.update_idletasks()
+    # Получаем размеры экрана
+    screen_width = win.winfo_screenwidth()
+    screen_height = win.winfo_screenheight()
+
+    # Получаем размеры окна
+    window_width = win.winfo_width()
+    window_height = win.winfo_height()
+
+    # Рассчитываем смещение для центрального положения
+    x = (screen_width - window_width) // 2
+    y = (screen_height - window_height) // 2
+
+    # Устанавливаем размер и позицию окна
+    # win.geometry(f"{window_width}x{window_height}+{x}+{y}")
+    # Устанавливаем только позицию окна
+    # win.geometry(f"+{x}+{y}")
+    # win.geometry("+250+250")
+
+    # Отображаем окно
+    win.deiconify()
+
     win.mainloop()
 
     logging.info('STOP')

@@ -1,4 +1,5 @@
 -- Created {{ ctx.created }}
+-- В рамках разработки потока {{ ctx.flow_name }}
 -- drop table if exists {{ tgt.schema }}.{{ tgt.table_name }} cascade;
 CREATE TABLE {{ tgt.schema }}.{{ tgt.table_name }} (
 {%- for field in tgt.fields %}

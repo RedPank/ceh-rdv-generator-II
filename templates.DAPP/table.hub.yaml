@@ -1,4 +1,5 @@
 # Created {{ ctx.created }}
+# В рамках разработки потока {{ ctx.flow_name }}
 name: {{hub.hub_name_only}}
 schema: {{hub.schema}}
 type: HUB

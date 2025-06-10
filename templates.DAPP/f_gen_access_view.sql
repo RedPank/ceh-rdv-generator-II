@@ -1,4 +1,5 @@
 -- Created {{ ctx.created }}
+-- В рамках разработки потока {{ ctx.flow_name }}
 select etl.f_gen_access_view(
 p_table_name_list:=array[
 ('{{ tgt.table_name }}','{{ tgt.primary_key }}')::etl.tp_table_cols

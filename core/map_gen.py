@@ -313,6 +313,8 @@ def mapping_generator(file_path: str, out_path: str) -> None:
                                        table_type=sh_data.target_rdv_object_type, src_cd=src_cd,
                                        distribution_field=sh_data.distribution_field)
 
+            distribution_field_list = copy.deepcopy(sh_data.distribution_field_list)
+
             #  Список полей целевой таблицы
             for f_index, f_row in tgt_mapping.iterrows():
 
@@ -334,13 +336,14 @@ def mapping_generator(file_path: str, out_path: str) -> None:
                         logging.error(
                             f'Имя хаба "{bk_object}" на листе "Детали загрузок Src-RDV"'
                             f' не соответствует шаблону "{pattern_bk_object}"')
+                        logging.warning("Ожидаемая структура поля: СХЕМА.ТАБЛИЦА.RK-ПОЛЕ или СХЕМА.ТАБЛИЦА")
                         is_table_error = True
 
-                    if len(f_row['attr:bk_object'].split('.')) != 3:
-                        logging.warning(f"Значение в поле 'attr:bk_object' состоит не из 3-х частей: {f_row['attr:bk_object']}")
-                        logging.warning("Проверьте корректность заполнения поля")
-                        logging.warning("Ожидаемая структура поля: СХЕМА.ТАБЛИЦА.RK-ПОЛЕ или СХЕМА.ТАБЛИЦА")
-                        Config.is_warning = True
+                    # if len(f_row['attr:bk_object'].split('.')) != 3:
+                    #     logging.warning(f"Значение в поле 'attr:bk_object' состоит не из 3-х частей: {f_row['attr:bk_object']}")
+                    #     logging.warning("Проверьте корректность заполнения поля")
+                    #     logging.warning("Ожидаемая структура поля: СХЕМА.ТАБЛИЦА.RK-ПОЛЕ или СХЕМА.ТАБЛИЦА")
+                    #     Config.is_warning = True
 
                     # Если rk-поле прописано в "attr:bk_object", то берем его оттуда
                     rk_field = f_row['tgt_attribute'] if len(f_row['attr:bk_object'].split('.')) == 2 else f_row['attr:bk_object'].split('.')[2]
@@ -368,6 +371,23 @@ def mapping_generator(file_path: str, out_path: str) -> None:
 
                 target_table.add_field(field=data_base_field)
 
+                if len(distribution_field_list) > 0:
+                    if f_row["tgt_attribute"] in distribution_field_list:
+                        if f_row["is_pk"] is False:
+                            logging.warning(f"Поле '{f_row["tgt_attribute"]}' не имеющее признак 'PK' в колонке "
+                                            f"'Tgt_PK' указано в колонке 'Distribution_field' листа 'Перечень загрузок Src-RDV'")
+                            Config.is_warning = True
+                        else:
+                            distribution_field_list.remove(f_row["tgt_attribute"])
+
+
+            # Конец цикла по списку полей целевой таблицы ##############################################################
+
+            if len(distribution_field_list) > 0:
+                logging.error(f"Поля/поле '{distribution_field_list}', из колонки 'Distribution_field' листа "
+                              f"'Перечень загрузок Src-RDV', не найдены в колонке 'Tgt_attr' на листе "
+                              f"'Детали загрузок Src-RDV'")
+                Config.is_error = True
 
             flow_context.add_target_table(target_table=target_table)
 

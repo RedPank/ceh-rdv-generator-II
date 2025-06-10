@@ -47,9 +47,9 @@ class ExportData:
 
 
         # uni - ресурсы (*.json) ---------------------------------------------------------------------------------------
-        exp_path = os.path.join(self.path, r"ceh-etl\_resources\uni")
-        os.makedirs(exp_path, exist_ok=True)
         for uni in self.flow_context.sources:
+            exp_path = os.path.join(self.path, r"ceh-etl\_resources\uni", uni.system.lower(), uni.schema)
+            os.makedirs(exp_path, exist_ok=True)
             file_path = os.path.join(exp_path, uni.file_name)
             template = self.env.get_template('resource.uni.table.json')
             output = template.render(ctx=uni, tags=self.flow_context.resource_tags)

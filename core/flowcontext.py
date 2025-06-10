@@ -95,6 +95,8 @@ class TargetTable:
         self.distribution_field= distribution_field.lower()
         self.distributed_by = self.distribution_field
 
+        self.ceh_aliases: dict = Config.field_type_list.get('ceh_datatype_aliases', dict())
+
 
     def add_field(self, field: DataBaseField):
         self.fields.append(field)
@@ -102,10 +104,9 @@ class TargetTable:
         # Список полей для описания ресурса.
         # Допустимые типы полей в разных файлах потока - разные. :-()
         ceh_field: DataBaseField = copy.deepcopy(field)
-        if field.data_type == 'decimal':
-            ceh_field.data_type = 'numeric'
-        elif field.data_type == 'char(32)':
-            ceh_field.data_type = 'text'
+        if field.data_type in self.ceh_aliases:
+            ceh_field: DataBaseField = copy.deepcopy(field)
+            ceh_field.data_type = self.ceh_aliases[field.data_type]
 
         self.resource_ceh_fields.append(ceh_field)
 
@@ -116,6 +117,7 @@ class TargetTable:
         # Заполняется только если колонка EXCEL "Distribution_field" - пустая
         if not self.distribution_field:
             self.distributed_by = self.primary_key
+
 
         # Список полей для расчета hash
         if field.name not in TargetTable._ignore_hash_fields and field.is_pk is False:
@@ -156,7 +158,6 @@ class Source:
 
     def add_field(self, field: DataBaseField):
         self.fields.append(field)
-
 
 class Target:
 
@@ -199,13 +200,10 @@ class MartField:
         tgt_field:str = str(row["tgt_attribute"]).strip().lower()
         tgt_field_type:str = str(row["tgt_attr_datatype"]).strip().lower()
         expression: str = str(row["expression"]).strip().removeprefix('=')
-        # is_pk:bool = str(row["_pk"]).strip().lower() == 'pk'
         is_pk = row["is_pk"]
 
         is_hub_field: bool = False
         if row['attr:conversion_type'] == 'hub':
-                # and len(row['attr:bk_object'].split('.')) <= 2
-                # and row['attr:bk_object'].split('.')[2] == tgt_field):
             is_hub_field = True
 
         value = src_attr

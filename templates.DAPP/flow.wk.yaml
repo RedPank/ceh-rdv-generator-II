@@ -1,4 +1,5 @@
 # Created {{ ctx.created }}
+# В рамках разработки потока {{ ctx.flow_name }}
 name: {{ ctx.flow_name }}
 type: WORK_FLOW
 schema_version: '{{ ctx.work_flow_schema_version }}'

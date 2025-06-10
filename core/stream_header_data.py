@@ -17,7 +17,7 @@ class StreamHeaderData:
 
         self.subalgorithm_uid = str(self.row["subalgorithm_uid"])
         # Отсекаем нули после точки/запятой. Из-за странностей EXCEL
-        self.subalgorithm_uid = re.sub(r"(\.|,)0$", "", self.subalgorithm_uid)
+        self.subalgorithm_uid = re.sub(r"([.,])0$", "", self.subalgorithm_uid)
 
         self.flow_name = re.sub(r"\s", '', self.row["flow_name"])
 
