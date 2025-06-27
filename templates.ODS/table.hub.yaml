@@ -1,0 +1,45 @@
+# Created {{ ctx.created }}
+# В рамках разработки потока {{ ctx.flow_name }}
+name: {{hub.hub_name_only}}
+schema: {{hub.schema}}
+type: HUB
+schema_version: '1.2'
+columns:
+  - name: {{ hub.rk_field }}
+    type: BIGINT
+    nullable: false
+  - name: {{ hub.id_field }}
+    type: TEXT
+    nullable: false
+  - name: src_cd
+    type: TEXT
+    nullable: false
+  - name: bk_type
+    type: TEXT
+    nullable: false
+  - name: invalid_id
+    type: TEXT
+    nullable: false
+  - name: version_id
+    type: BIGINT
+    nullable: false
+rk_field: {{hub.rk_field}}
+bk_fields:
+  - name: {{hub.id_field}}
+resource_cd: ceh.{{hub.schema}}.{{hub.hub_name_only}}
+business_key_schemas:
+  - name: {{hub.bk_schema_name}}
+    src_cd: {{hub.src_cd}}
+    bk_type: {{hub.rk_field}}_seq
+    fields:
+      - name: {{hub.id_field}}
+        field_data_quality_checks:
+          - name: IsEmpty
+        field_transform_chains:
+          - name: Cast
+            params:
+              to_type: VARCHAR
+          - name: Coalesce
+            params:
+              value: ~null~
+    split_resource: true

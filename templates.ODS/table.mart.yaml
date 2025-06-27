@@ -1,0 +1,60 @@
+# Created {{ ctx.created }}
+# В рамках разработки потока {{ ctx.flow_name }}
+schema_version: '1.0'
+type: MART
+name: {{ tgt.table_name }}
+schema: rdv
+
+columns:
+{%- for field in tgt.fields %}
+{%- if field.name == 'hash_diff' %}
+  - name: hash_diff
+    type: CHAR
+    nullable: false
+    params:
+      length: 32
+{%- else %}
+  - name: {{ field.name|e }}
+    type: {{ field.data_type.upper() }}
+    nullable: {{field.is_nullable}}
+{%- endif %}
+{%- endfor %}
+
+{%- if ctx.tgt_history_field != '' %}
+history_field: {{ctx.tgt_history_field}}
+{%- endif %}
+
+{%- if tgt.hash_fields|length > 0 %}
+hash_src_fields:
+{%- for hash_field in tgt.hash_fields %}
+  - {{ hash_field.lower() }}
+{%- endfor %}
+{%- else %}
+hash_src_fields: []
+{%- endif %}
+
+{%- if tgt.multi_fields|length > 0 %}
+multi_fields:
+{%- for field in tgt.multi_fields %}
+  - name: {{ field }}
+    field_data_quality_checks:
+    - name: IsEmpty
+{%- endfor %}
+{%- else %}
+multi_fields: []
+{%- endif %}
+
+ref_fields: []
+
+{%- if tgt.hub_fields|length > 0 %}
+hub_fields:
+{%- for hub_field in tgt.hub_fields %}
+  - name: {{ hub_field.mart_retain_key }}
+    hub_table: {{ hub_field.hub_name_only }}
+    hub_schema: {{ hub_field.schema }}
+    is_bk: {{ hub_field.is_bk }}
+{%- endfor %}
+{%- else %}
+hub_fields: []
+{%- endif %}
+

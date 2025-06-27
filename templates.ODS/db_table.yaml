@@ -1,0 +1,14 @@
+# Created {{ ctx.created }}
+# В рамках разработки потока {{ ctx.flow_name }}
+schema_version: '1.2'
+type: DB_TABLE
+name: {{ src.table }}
+data_source_type: GENERIC
+source_system: {{ src.src_cd }}
+data_capture_mode: {{ src.data_capture_mode }}
+
+columns:
+{%- for field in src.fields %}
+  - name: {{ field.name.lower() }}
+    type: {{ field.data_type.upper() }}
+{%- endfor %}

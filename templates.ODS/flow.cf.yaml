@@ -1,0 +1,42 @@
+# Created: {{ ctx.created }}
+# В рамках разработки потока {{ ctx.flow_name }}
+schema_version: '2.0'
+metadata:
+  author: {{ ctx.author }}
+  version: "1.0"
+  description: Управляющий поток cf_{{ctx.base_flow_name}}
+  tags:
+    {%- for tag in ctx.tags %}
+    - {{tag}}
+    {%- endfor %}
+
+  group: general_leader
+  imports:
+    - rdv_cf_uni_template.cf_uni_template
+  main_flows:
+    - cf_{{ctx.base_flow_name}}
+flows:
+  - id: cf_{{ctx.base_flow_name}}
+    description: Поток wf_{{ctx.base_flow_name}}
+    builder: ceh_core_idl.app.builders.simple_flow_builder
+    tasks:
+      - id: run_wf_{{ctx.base_flow_name}}
+        builder: ceh_core_idl.app.builders.include_flow_builder
+        properties:
+        {%- if ctx.data_capture_mode == 'increment' %}
+          ref: cf_uni_template
+        {%- else %}
+          ref: cf_snapshot
+        {%- endif %}
+          properties:
+            mode: ANY
+            wf_metric: wf_dataset_max_date_to
+            cf_metric: dataset_max_date_to
+            work_flow_id: wf_{{ctx.base_flow_name}}
+            actual_dttm_prefix: {{ ctx.targets[0].src_cd.lower() }}
+            algos_map:
+            {%- for alg in ctx.sources %}
+              {{ alg.algorithm_uid }}:
+                - uni: {{ alg.uni_res }}
+                  ceh: {{ alg.ceh_res }}
+             {%- endfor %}
