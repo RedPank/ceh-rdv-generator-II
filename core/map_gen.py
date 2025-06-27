@@ -92,13 +92,10 @@ def mapping_generator(file_path: str, out_path: str) -> None:
         flow_context = FlowContext(flow_name)
 
         # Цикл по списку целевых таблиц
-        table_index: int = 0
         for _, row in mapping_meta.mapping_list.query(f'flow_name == "{flow_name}"').iterrows():
 
             logging.info('')
             logging.info(f">>>>> Поток: {wrk_index + 1}: {flow_name}")
-            logging.info(f">>>>> Таблица: {table_index + 1}: {row["tgt_table"]}")
-            table_index =+ 1
 
             # Данные строки "Перечень загрузок Src-RDV" листа для таблицы
             sh_data = StreamHeaderData(row=row)
@@ -132,6 +129,7 @@ def mapping_generator(file_path: str, out_path: str) -> None:
                 is_table_error = True
                 continue
 
+            logging.info(f'Схема данных:     {sh_data.src_schema}')
             logging.info(f'Таблица-источник: {sh_data.src_full_name}')
 
             # Проверяем соответствие названия целевой таблицы шаблону
@@ -142,7 +140,7 @@ def mapping_generator(file_path: str, out_path: str) -> None:
                 is_table_error = True
                 continue
 
-            logging.info(f'Целевая таблица: {tgt_full_name}')
+            logging.info(f'Целевая таблица:  {tgt_full_name}')
 
             # Возвращает наименование (логическое) "источника" для заданной целевой таблицы - поле src_sd
             src_cd: str | None = mapping_meta.get_src_cd_by_table(tgt_full_name)
@@ -187,7 +185,10 @@ def mapping_generator(file_path: str, out_path: str) -> None:
             ceh_resource: str = "ceh." + tgt_full_name
 
             # Внешняя таблица - источник
-            source = Source(system=sh_data.source_system, schema=sh_data.src_schema, table=sh_data.src_table,
+            source_name_schema = Config.config.get('source_name_schema', sh_data.src_schema)
+            source_system = Config.config.get('source_name', sh_data.source_system)
+
+            source = Source(system=source_system, schema=source_name_schema, table=sh_data.src_table,
                             algorithm_uid=algorithm_uid, algorithm_uid_2=subalgorithm_uid, ceh_resource=ceh_resource,
                             src_cd=src_cd, data_capture_mode=Config.data_capture_mode)
 
@@ -200,7 +201,6 @@ def mapping_generator(file_path: str, out_path: str) -> None:
                 logging.debug(f"В таблице-источнике {sh_data.src_full_name} указаны повторяющиеся названия полей")
                 logging.debug(str(dupl))
                 logging.debug('При формировании файла описания таблицы источника дубликаты будут удалены')
-                # Config.is_warning = True
 
             # Удаляем дубликаты имен полей из списка полей таблицы-источника
             src_mapping = src_mapping.drop_duplicates(subset=['src_attribute'], keep='first')
@@ -218,10 +218,11 @@ def mapping_generator(file_path: str, out_path: str) -> None:
                                                properties = dict()))
 
             flow_context.add_source(source)
+            uni_resource_cd = source.resource_cd
 
             # Целевая таблица
             target = Target(schema=sh_data.tgt_schema, table = sh_data.tgt_table, src_cd=src_cd.lower(),
-                            object_type=sh_data.target_rdv_object_type)
+                            object_type=sh_data.target_rdv_object_type, uni_resource_cd=uni_resource_cd)
 
             # Секция "local_metrics". Данные формируются для каждой таблицы. Но используется перове значение.
             local_metric: LocalMetric = (
@@ -244,13 +245,13 @@ def mapping_generator(file_path: str, out_path: str) -> None:
                      source_system=sh_data.source_system, source_schema=sh_data.src_schema,
                      source_name=sh_data.src_table,
                      table_name=sh_data.tgt_table,
-                     src_cd=src_cd, comment=sh_data.comment)
+                     src_cd=src_cd, comment=sh_data.comment, uni_resource_cd=uni_resource_cd)
             )
 
             # Цикл по полям целевой таблицы
             for f_index, f_row in tgt_mapping.iterrows():
                 mart_field = MartField.create_mart_field(f_row)
-                mart_mapping.add_fields(copy.copy(mart_field))
+                mart_mapping.add_fields(copy.deepcopy(mart_field))
 
                 if mart_field.is_hub_field:
                     logging.debug(f"Поле '{mart_field.tgt_field}' не будет добавлено в секцию 'field_map', "

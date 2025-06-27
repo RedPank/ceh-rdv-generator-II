@@ -8,7 +8,7 @@ from core.config import Config
 from core.exceptions import IncorrectMappingException
 
 
-def _generate_mapping_df(file_data: bytes, sheet_name: str):
+def _generate_mapping_df(file_data: bytes, sheet_name: str, header = 1):
     """
     Трансформирует полученные данные EXCEL в тип DataFrame.
     Обрабатываются только данные листа из sheet_name.
@@ -36,7 +36,7 @@ def _generate_mapping_df(file_data: bytes, sheet_name: str):
     # Преобразование данных в DataFrame.
     # Читаем со строки с индексом 1 -> вторая строка сверху.
     try:
-        mapping: DataFrame = pd.read_excel(io=file_data, sheet_name=sheet_name, header=1)
+        mapping: DataFrame = pd.read_excel(io=file_data, sheet_name=sheet_name, header=header)
     except Exception:
         logging.exception("Ошибка преобразования данных в DataFrame")
         raise
@@ -45,6 +45,12 @@ def _generate_mapping_df(file_data: bytes, sheet_name: str):
     # rename_list - словарь {старое_название: новое_название}
     rename_list = {col: col.lower().strip() for col in mapping.columns}
     mapping = mapping.rename(columns=rename_list)
+
+    # Добавляем номер строки из EXCEL.
+    # Добавляем 2, так как читаем со второй строки, а нумерация начинается с "0"
+    indices = [ x + header + 1 for x in mapping.index.tolist()]
+    mapping['excel_row_num'] = indices
+    columns_list.append('excel_row_num')
 
     # Проверка полученных данных
     error: bool = False
@@ -68,10 +74,6 @@ def _generate_mapping_df(file_data: bytes, sheet_name: str):
 
     if error:
         raise IncorrectMappingException("Ошибка в структуре данных EXCEL")
-
-    # Добавляем номер строки из EXCEL
-    indices = mapping.index.tolist()
-    mapping['excel_row_num'] = indices
 
 
     # Трансформация данных: оставляем в наборе только колонки из списка и не пустые строки
@@ -226,8 +228,8 @@ class MappingMeta:
 
         self.mapping_df = _generate_mapping_df(file_data=byte_data, sheet_name='Детали загрузок Src-RDV')
 
-        # Оставляем только строки, в которых заполнено поле 'Tgt_table'
-        self.mapping_df.dropna(subset=['tgt_table'], inplace=True)
+        # Оставляем только строки, в которых заполнено поле 'Tgt_table' или 'Src_table'
+        self.mapping_df.dropna(subset=['tgt_table', 'src_table'], how='all', inplace=True)
 
         # Заменяем NaN на пустые строки в колонке 'version_end'
         self.mapping_df.fillna({'version_end': ""}, inplace=True)
@@ -249,7 +251,7 @@ class MappingMeta:
 
         self.mapping_df['tgt_attr_datatype'] = self.mapping_df['tgt_attr_datatype'].fillna(value="").str.strip().str.lower()
 
-        # Выполняем замену типов данных источника, если в src_datatype_aliases есть "пара"src_datatype_aliases
+        # Выполняем замену типов данных источника, если в src_datatype_aliases есть "пара" src_datatype_aliases
         self.mapping_df.replace(to_replace={'src_attr_datatype': src_datatype_aliases}, inplace=True)
 
         # Выполняем замену типов данных приемника, если в tgt_datatype_aliases есть "пара" tgt_datatype_aliases
@@ -259,7 +261,7 @@ class MappingMeta:
         # При чтении данных Панда заменяет строку 'null' на значение 'nan'. Поэтому производим "обратную" замену ...
         self.mapping_df.fillna({'tgt_attr_mandatory': "null"}, inplace=True)
         # Заменяем "\xa0" на "null" (и такое бывает)
-        self.mapping_df.replace({'tgt_attr_mandatory': "\xa0"}, value="null", inplace=True)
+        # self.mapping_df.replace({'tgt_attr_mandatory': "\xa0"}, value="null", inplace=True)
         self.mapping_df['tgt_attr_mandatory'] = self.mapping_df['tgt_attr_mandatory'].str.strip().str.lower()
 
 
@@ -284,14 +286,14 @@ class MappingMeta:
         if len(err_rows) > 0:
             logging.error(f"Значение в поле 'attr:nulldefault' не соответствует шаблону: '{pattern}'")
             logging.error('\n' +
-                          str(err_rows[['tgt_table', 'tgt_attribute', 'tgt_attr_datatype', 'attr_nulldefault']]))
+                          str(err_rows[['excel_row_num', 'tgt_table', 'tgt_attribute', 'tgt_attr_datatype', 'attr_nulldefault']]))
             is_error = True
 
         # Проверяем состав поля 'tgt_pk'
         err_rows: pd.DataFrame = self.mapping_df[~self.mapping_df['tgt_pk'].apply(test_tgt_pk)]
         if len(err_rows) > 0:
             logging.warning(f"В поле 'tgt_pk' указаны значения, которые не будут обрабатываться")
-            for line in str(err_rows[['tgt_table', 'tgt_attribute', 'tgt_pk', 'tgt_attr_datatype']]).splitlines():
+            for line in str(err_rows[['excel_row_num', 'tgt_table', 'tgt_attribute', 'tgt_pk', 'tgt_attr_datatype']]).splitlines():
                 logging.error(line)
             logging.error(f'Допустимые значения: {tgt_pk}')
             Config.is_warning = True
@@ -319,7 +321,7 @@ class MappingMeta:
         if len(exp_err) > 0:
             logging.error("Поля 'expression' и 'src_attribut' взаимоисключающие и не могут быть заполнены одновременно")
 
-            logging.error ('Список строк с ошибками:\n' + str(exp_err[['src_table', 'src_attribute', 'expression', 'tgt_table', 'tgt_attribute']]))
+            logging.error ('Список строк с ошибками:\n' + str(exp_err[['excel_row_num', 'src_table', 'src_attribute', 'expression', 'tgt_table', 'tgt_attribute']]))
             is_error = True
 
         if is_error:
@@ -343,7 +345,8 @@ class MappingMeta:
         """
         Возвращает список (DataFrame) строк для заданной целевой таблицы
         """
-        df = self.mapping_df[self.mapping_df['src_table'] == src_table].dropna(how="all")
+        src_table = src_table.upper()
+        df = self.mapping_df[self.mapping_df['src_table'].str.upper() == src_table].dropna(how="all")
         df = df[['src_table', 'src_attribute', 'src_attr_datatype', 'src_pk', 'comment', 'tgt_attribute', 'tgt_attr_datatype']]
         return df
 
@@ -360,7 +363,8 @@ class MappingMeta:
             logging.error(f"Найдено несколько описаний для поля 'src_cd' в таблице '{tgt_table}'")
             return None
 
-        src_cd: str = src_cd_obj.to_numpy()[0]
+        # src_cd: str = src_cd_obj.to_numpy()[0]
+        src_cd: str = src_cd_obj.iloc[0]
         # Удаляем пробельные символы
         src_cd = re.sub(r"\s", '', src_cd)
         # Выделяем имя источника

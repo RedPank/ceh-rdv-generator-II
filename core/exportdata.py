@@ -1,3 +1,4 @@
+import logging
 import os
 from jinja2 import Environment, FileSystemLoader
 from core.config import Config
@@ -10,7 +11,10 @@ class ExportData:
 
         self.templates_path = templates_path
         self.flow_context = flow_context
-        self.env = Environment(loader=FileSystemLoader(Config.templates_path))
+        # self.env_context = Environment(loader=FileSystemLoader(Config.templates_path))
+        self.env_context = Config.env
+
+        self.templates_list = self.env_context.list_templates()
 
     def generate_files(self):
 
@@ -18,7 +22,7 @@ class ExportData:
         exp_path = os.path.join(self.path, r"ceh-etl\general_ledger\src_rdv\schema\work_flows")
         file_path = os.path.join(exp_path, self.flow_context.flow_name + '.yaml')
         os.makedirs(exp_path, exist_ok=True)
-        template = self.env.get_template('flow.wk.yaml')
+        template = self.env_context.get_template('flow.wk.yaml')
         output = template.render(ctx=self.flow_context)
 
         with open(file_path, "w", encoding="utf-8") as f:
@@ -28,7 +32,7 @@ class ExportData:
         exp_path = os.path.join(self.path, r"ceh-etl\general_ledger\src_rdv\flow_dumps")
         file_path = os.path.join(exp_path, "cf_" + self.flow_context.base_flow_name + '.yaml')
         os.makedirs(exp_path, exist_ok=True)
-        template = self.env.get_template('flow.cf.yaml')
+        template = self.env_context.get_template('flow.cf.yaml')
         output = template.render(ctx=self.flow_context)
 
         with open(file_path, "w", encoding="utf-8") as f:
@@ -39,7 +43,7 @@ class ExportData:
         exp_path = os.path.join(self.path, r"ceh-etl\general_ledger\src_rdv\dags")
         file_path = os.path.join(exp_path, self.flow_context.flow_name + '.py')
         os.makedirs(exp_path, exist_ok=True)
-        template = self.env.get_template('flow_wk.py')
+        template = self.env_context.get_template('flow_wk.py')
         output = template.render(ctx=self.flow_context)
 
         with open(file_path, "w", encoding="utf-8") as f:
@@ -51,8 +55,16 @@ class ExportData:
             exp_path = os.path.join(self.path, r"ceh-etl\_resources\uni", uni.system.lower(), uni.schema)
             os.makedirs(exp_path, exist_ok=True)
             file_path = os.path.join(exp_path, uni.file_name)
-            template = self.env.get_template('resource.uni.table.json')
-            output = template.render(ctx=uni, tags=self.flow_context.resource_tags)
+
+            # Шаблоны для разных схем могут быть разными
+            template_name = f'resource.uni.table.{uni.schema.upper()}.json'
+            if template_name not in self.templates_list:
+                template_name = 'resource.uni.table.json'
+
+            logging.debug(f'Для uni-ресурса "{uni.uni_res}" использован шаблон "{template_name}"')
+            
+            template = self.env_context.get_template(template_name)
+            output = template.render(ctx=self.flow_context, uni=uni, tags=self.flow_context.resource_tags)
 
             with open(file_path, "w", encoding="utf-8") as f:
                 f.write(output)
@@ -64,7 +76,7 @@ class ExportData:
         for target_table in self.flow_context.target_tables:
             if target_table.table_type == 'MART':
                 file_path = os.path.join(exp_path, target_table.file_name + '.sql')
-                template = self.env.get_template('create.table.mart.sql')
+                template = self.env_context.get_template('create.table.mart.sql')
                 output = template.render(ctx=self.flow_context, tgt=target_table)
 
                 with open(file_path, "w", encoding="utf-8") as f:
@@ -74,7 +86,7 @@ class ExportData:
         # Файл описания mart-таблицы -----------------------------------------------------------------------------------
         exp_path = os.path.join(self.path, r"ceh-etl\general_ledger\src_rdv\schema\ceh\rdv")
         os.makedirs(exp_path, exist_ok=True)
-        template = self.env.get_template('table.mart.yaml')
+        template = self.env_context.get_template('table.mart.yaml')
         for target_table in self.flow_context.target_tables:
             if target_table.table_type == 'MART':
                 file_path = os.path.join(exp_path, target_table.table_name + '.yaml')
@@ -87,7 +99,7 @@ class ExportData:
         # Ресурсы целевых mart-таблицы ---------------------------------------------------------------------------------
         exp_path = os.path.join(self.path, r"ceh-etl\_resources\ceh\rdv")
         os.makedirs(exp_path, exist_ok=True)
-        template = self.env.get_template('resource.ceh.mart.json')
+        template = self.env_context.get_template('resource.ceh.mart.json')
         for target_table in self.flow_context.target_tables:
             if target_table.table_type == 'MART':
                 file_path = os.path.join(exp_path, 'ceh.' + target_table.schema + '.' + target_table.table_name + '.json')
@@ -100,7 +112,7 @@ class ExportData:
         # Необязательные скрипты создания hub - таблиц -----------------------------------------------------------------
         exp_path = os.path.join(self.path, r"src\ceh-ddl\extensions\ripper\.data")
         os.makedirs(exp_path, exist_ok=True)
-        template = self.env.get_template('create.table.hub.sql')
+        template = self.env_context.get_template('create.table.hub.sql')
         for hub in self.flow_context.hubs:
             file_path = os.path.join(exp_path, hub.full_table_name + '.sql')
             output = template.render(ctx=hub)
@@ -111,7 +123,7 @@ class ExportData:
         # Необязательные файлы - Описание хаб - таблиц (hub_*.yaml) ----------------------------------------------------
         exp_path = os.path.join(self.path, r"src\ceh-etl\general_ledger\src_rdv\schema\ceh\rdv")
         os.makedirs(exp_path, exist_ok=True)
-        template = self.env.get_template('table.hub.yaml')
+        template = self.env_context.get_template('table.hub.yaml')
         for hub in self.flow_context.hubs:
             file_path = os.path.join(exp_path, hub.hub_name_only + '.yaml')
             output = template.render(ctx=self.flow_context, hub=hub)
@@ -123,7 +135,7 @@ class ExportData:
         # Формируются 2 одинаковых файла с разными именами
         exp_path = os.path.join(self.path, r"src\ceh-etl\_resources\ceh\rdv")
         os.makedirs(exp_path, exist_ok=True)
-        template = self.env.get_template('resource.ceh.hub.bk_schema.json')
+        template = self.env_context.get_template('resource.ceh.hub.bk_schema.json')
         # template2 = self.env.get_template('resource.ceh.hub.json')
         for hub in self.flow_context.hubs:
 
@@ -144,7 +156,7 @@ class ExportData:
         for target_table in self.flow_context.target_tables:
             if target_table.table_type == 'MART':
                 file_path = os.path.join(exp_path, 'acc.' + target_table.file_name + '.sql')
-                template = self.env.get_template('f_gen_access_view.sql')
+                template = self.env_context.get_template('f_gen_access_view.sql')
                 output = template.render(ctx=self.flow_context, tgt=target_table)
 
                 with open(file_path, "w", encoding="utf-8") as f:
@@ -156,7 +168,7 @@ class ExportData:
         os.makedirs(exp_path, exist_ok=True)
         for src in self.flow_context.sources:
             file_path = os.path.join(exp_path, src.table + '.yaml')
-            template = self.env.get_template('db_table.yaml')
+            template = self.env_context.get_template('db_table.yaml')
             output = template.render(ctx=self.flow_context, src=src)
 
             with open(file_path, "w", encoding="utf-8") as f:

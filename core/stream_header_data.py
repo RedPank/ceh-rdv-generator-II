@@ -28,7 +28,12 @@ class StreamHeaderData:
 
         self.target_rdv_object_type = re.sub(r"\s", '', self.row["target_rdv_object_type"]).upper()
 
+        # source_table
         self.src_full_name: str = re.sub(r"\s", '', self.row["src_table"])
+        self.src_full_name = self.src_full_name.upper()
+
+        # Делаем такой разбор, что-бы не было исключения в этом месте.
+        # Проверка соответствия имени шаблону выполняется позже
         if self.src_full_name.find(".") > 0:
             self.src_schema = self.src_full_name.split('.')[0]
             self.src_table = self.src_full_name.split('.')[1]

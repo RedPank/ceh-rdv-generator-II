@@ -24,9 +24,24 @@ anchor_subo_name: &subo_name
 # Предметная область.
 anchor_area: &area
   "application"
-# Источник данных
+
+# Описание внешнего источника данных. Может различаться для разных источников и их схем ...
+# Источник данных.
 anchor_src_cd: &src_cd
   "MSCL"
+# Источник данных (транспорт) ODS, DAPP, ... Название смотри в маппинге на листе "Перечень загрузок Src-RDV".
+anchor_source_name: &source_name
+  "ODS"
+# Схема в которой находится источник данных. От имени зависит формирование ресурса для uni-провайдера.
+anchor_source_name_schema: &source_name_schema
+  "MSCL_SOH"
+
+# Шаблон для формирования resource_cd внешней таблицы.
+anchor_uni_resource_template: &uni_resource_template
+  "{{uni.system|lower}}.{{uni.schema|upper}}.{{uni.table|upper}}"   # "ods.MSCL_SOH.H2_RCLDPCO"
+# Пока не работает ...
+anchor_external_table_name_in_capital_letters: True
+
 
 ########################################################################################################################
 
@@ -59,7 +74,7 @@ excel_file: "C:\\Projects\\rdv\\Маппинг_ЦЕХ_RDV_BOOP_v2.1_old.xlsx"
 
 # Ссылка на каталог с шаблонами.
 # По умолчанию шаблоны берутся из каталога templates, который находится "рядом" с main.py
-templates: "C:\\GitHub\\ceh-rdv-generator-II\\templates.DAPP"
+templates: "C:\\GitHub\\ceh-rdv-generator-II\\templates.ODS"
 
 # Программа для отображения log-файла. Работу на linux не проверял.
 # Первая строка содержит имя (полный путь) вызываемого редактора.
@@ -90,25 +105,40 @@ processed_dt: id_updtime
 # Отсечение даты: microseconds,milliseconds,second,minute,hour,day,week,month,quarter,year,decade,,centurymillennium
 processed_dt_conversion: second
 
+# Формат преобразования строки из "processed_dt" в дату.
+# Используется в шаблоне flow.wk.yaml при чтении данных из внешней таблицы.
+#processed_dt_format: "%Y-%m-%dT%H:%M:%S"        # "2025-06-21T23:30:45"
+#processed_dt_format: "%y-%b-%d %I.%M.%S.%f %p"  # "20-FEB-25 11.01.37.558843 PM"
+
+
 # Поле "историчности" в целевой таблице (поле history_field в шаблоне table.mart.yaml)
-tgt_history_field: effective_dttm
+# Используйте с осторожностью!
+# tgt_history_field: effective_dttm
 
 # Добавляет в журнальный файл esc-последовательности для выделения цветом сообщений разных уровней.
 # Для просмотра требуется внешний редактор распознающий esc-последовательности.
 # Notepad++.exe "из коробки" не умеет выделять цветом синтаксис журнального файла или esc-последовательности.
+# Для подсветки надо установить плагин или зарегистрировать пользовательский синтаксис
+# в котором определена подсветка синтаксиса.
 # Для Visual Studio Code раскраска не нужна, синтаксис журнального файла подсвечивается автоматически.
 colorlog: False
 
 ########################################################################################################################
 
+# Не редактировать эту секцию
 author: *author
 team: *team
 subo: *subo
 subo_name: *subo_name
 area: *area
 src_cd: *src_cd
+source_name: *source_name
+source_name_schema: *source_name_schema
+uni_resource_template: *uni_resource_template
 
+                   
 # Набор строк для секции metadata.tags в файлах потока cf/wf
+# Можно добавить свою строку
 tags:
   - author: *author
   - team: *team
@@ -117,7 +147,7 @@ tags:
   - rls:000
 
 # Набор строк для секции tags в файлах описания ресурсов *.json
-# Можно изменить порядок строк или/и добавить свою строку без переменных
+# Можно изменить порядок строк или/и добавить свою строку
 resource_tags:
   - author: *author
   - team: *team
@@ -125,6 +155,7 @@ resource_tags:
   - area: *area
 
 ### Шаблоны для проверки имен/названий #################################################################################
+# Не редактировать эту секцию без необходимости
 regexp:
   # Шаблон Кода источника
   src_cd_regexp: "^={0,1}'([A-Z_]+)'$"
@@ -149,6 +180,7 @@ regexp:
 
 # Настройка списков полей
 # Раздел должен присутствовать!!!
+
 setting_up_field_lists:
   # Список названий полей, которые НЕ будут использоваться для формирования hash_src_fields
   # По поводу src_cd нет однозначного понимания ...
@@ -168,7 +200,19 @@ setting_up_field_lists:
     - hdp_processed_dttm
     - processed_dttm
 
-  # Список полей, которые НЕ включаются в опцию distributed_by, multi_fields, primary_key
+  # Список полей, которые НЕ включаются в опцию multi_fields
+  ignore_multi_fields:
+    - effective_to_dttm
+    - hash_diff
+    - src_cd
+    - version_id
+    - deleted_flg
+    - valid_flg
+    - invalid_id
+    - processed_dt
+    - hdp_processed_dttm
+
+  # Список полей, которые НЕ включаются в опцию distributed_by, primary_key
   ignore_primary_key:
     - effective_date
     - effective_dttm
@@ -290,17 +334,18 @@ field_type_list:
 
   # Список типов данных в приемнике, которые будут заменены на "правильные"
   # типы данных при формировании файла по шаблону resource.ceh.mart.json
-  # Кто-бы мог подумать, что в разных частях фрейма аналогичные типы данных называются по-разному!
+  # Кто-бы мог подумать, что в разных частях/файлах фрейма типы данных для одних и тех-же полей называются по-разному!
   ceh_datatype_aliases: {
     'decimal': 'numeric',
     'char(32)': 'text'
 
   }
 
-# Список имен колонок на листах файла EXCEL, которые должны присутствовать
-# Названия колонок используются в программе, так что менять их без изменения кода нельзя
+# Список имен колонок на листах файла EXCEL, которые должны присутствовать.
+# Названия колонок используются в программе, так что менять их без изменения кода нельзя.
 # Замена названий колонок может быть выполнена через секцию col_aliases
-# Регистр букв не имеет значения
+# Регистр букв не имеет значения.
+# Не редактировать!
 excel_data_definition:
   columns:
     'Детали загрузок Src-RDV':
@@ -339,7 +384,9 @@ excel_data_definition:
       - 'comment'
 
   # Список псевдонимов имен колонок. У каждого имени может быть один псевдоним.
-  # "Название колонки в программе": "Название колонки на листе"
+  # "Название колонки в программе": "Название колонки на листе EXCEL"
+  # Например, название колонки "UID" в EXCEL будет изменено на 'Algorithm_UID' для обработки внутри программы.
+  # EXCEL при этом меняться не будет.
   col_aliases:
     'Детали загрузок Src-RDV':
       'Algorithm_UID': 'UID'

@@ -1,0 +1,51 @@
+{# Шаблон для формирования описания uni-ресурса, связанного с внешней таблицей-источником данных в схеме ODS MSCL_SOH #}
+{
+    "resource_cd": "{{ uni.resource_cd }}",
+    "resource_desc": "Таблица {{uni.schema}}.{{uni.table}}",
+    "tags": [
+{%- if tags|length > 0 %}
+{%- for tag in tags %}
+        {{tag}}{%- if not loop.last -%}, {% endif -%}
+{%- endfor %}
+{%- endif %}
+    ],
+    "features": {"domain": "{{ uni.system|upper }}",
+                 "source_system": "{{ uni.src_cd }}",
+                 "table": "{{ uni.table }}"},
+    "status": {
+        "is_readonly": true,
+        "is_maintenance": true,
+        "is_deleted": false
+    },
+    "connections": "{{ '{{' }} jdbc_conn | for_instance('{{ uni.instance }}') {{ '}}' }}",
+    "datasets": [
+        {
+            "name": "{{ uni.table }}",
+            "schema_name": "{{ '{{' }} {{ uni.instance }}.schema {{ '}}' }}",
+            "filter": "",
+            "physical_options": {}
+        }
+    ],
+    "metrics": {
+        "is_locked": "{{ '{{' }} metrics.is_locked | for_instance('{{ uni.instance }}', resource_cd='{{ uni.resource_cd }}') {{ '}}' }}",
+        "locked_by": "{{ '{{' }} metrics.locked_by | for_instance('{{ uni.instance }}', resource_cd='{{ uni.resource_cd }}') {{ '}}' }}",
+        "dataset_max_date_to": "{{ '{{' }} metrics.dapp_rp_dataset_max_date_to | for_instance('{{ uni.instance }}', database={{ uni.instance }}.schema, table='{{ uni.table|upper }}') {{ '}}' }}, type='SOH'",
+        "wf_max_date_to": {
+            "id": "{{ uni.resource_cd }}.wf_max_date_to",
+            "connection": "odbc",
+            "query": "select 'alias_metric'",
+            "query_parameters": null,
+            "default": "1900-01-01T00:00:00.00000",
+            "refresh": "PDT00H01M",
+            "alias": "dataset_max_date_to"
+        },
+        "{{ uni.actual_dttm_name }}": {
+            "id": "{{ uni.resource_cd }}.{{ uni.actual_dttm_name }}",
+            "connection": "odbc",
+            "query": "SELECT date_trunc('second', {{ '{{' }} ods_ods_meta.schema {{ '}}' }}.LOAD_TABLE_TO_DATE('MSCL_SOH', '{{uni.table|upper}}')) FROM DUAL;",
+            "query_parameters": null,
+            "default": "1900-01-01T00:00:00",
+            "refresh": "PDT00H01M"
+        }
+    }
+}

@@ -1,8 +1,9 @@
+import copy
+import os
 import random
 import string
 from datetime import datetime
-import os
-import copy
+
 from pandas import Series
 
 from core.config import Config
@@ -20,6 +21,7 @@ def create_short_name(name: str, short_name_len: int, random_str_len: int,
     Если длина name меньше чем short_name_len, то ф-ия возвращает name без преобразования.
     Если длина name больше чем short_name_len, то name усекается до длинны (short_name_len - random_str_len) и
     дополняется рандомной строкой до длинны short_name_len.
+    pattern=^[a-z][a-z0-9_]{2,22}$
     Args:
         name: Имя, на основе которого надо сформировать "короткое имя".
         short_name_len: Длина "короткого имени", которое надо сформировать.
@@ -38,7 +40,7 @@ def create_short_name(name: str, short_name_len: int, random_str_len: int,
     else:
         short_name = name
 
-    return short_name
+    return short_name.lower()
 
 
 # Класс TargetTable ----------------------------------------------------------------------------------------------------
@@ -66,6 +68,7 @@ class TargetTable:
 
     _ignore_primary_key = None
     _ignore_hash_fields = None
+    _ignore_multi_fields = None
 
     def __init__(self, schema: str, table_name: str, comment: str, table_type: str, src_cd: str,
                  distribution_field: str):
@@ -74,8 +77,11 @@ class TargetTable:
             TargetTable._ignore_primary_key = Config.setting_up_field_lists.get('ignore_primary_key', list())
         if not TargetTable._ignore_hash_fields:
             TargetTable._ignore_hash_fields = Config.setting_up_field_lists.get('ignore_hash_set', list())
+        if not TargetTable._ignore_multi_fields:
+            TargetTable._ignore_multi_fields = Config.setting_up_field_lists.get('ignore_multi_fields', list())
 
-        self.fields = []
+
+        self.fields: list[DataBaseField] = []
         self.resource_ceh_fields = []
         self.hash_fields = []
         self.multi_fields = []
@@ -125,19 +131,28 @@ class TargetTable:
 
         # Список первичных ключей для опции multi_fields.
         # Поля, которые являются ссылками на hub - не включаются
-        if field.is_pk and not field.properties.get("is_hub_field", False) and field.name not in TargetTable._ignore_primary_key:
+        if field.is_pk and not field.properties.get("is_hub_field", False) and field.name not in TargetTable._ignore_multi_fields:
             self.multi_fields.append(field.name)
 
     def add_hub_field(self, hub: 'HubMartField'):
         self.hub_fields.append(hub)
+
+    # Выставляем на первое место поля с признаком not null.
+    # Это "заморочка", что-бы отработал Ripper, который циклится на списке полей в таблице из-за
+    # некорректного регулярного выражения. А так - работает. :-)
+    def fields_sort(self):
+        self.fields.sort(key = lambda obj: ('A' if obj.is_pk else 'B') + obj.name)
+
 
 class Source:
 
     def __init__(self, system: str, schema: str, table: str, algorithm_uid:str, algorithm_uid_2: str,
                  ceh_resource: str, src_cd: str, data_capture_mode: str):
         self.system = system
+        self.source_system = self.system
+
         self.schema = schema
-        self.table = table
+        self.table = table.upper()
         self.algorithm_uid=algorithm_uid
         self.algorithm_uid_2=algorithm_uid_2
         self.src_cd = src_cd
@@ -146,9 +161,18 @@ class Source:
         # Длина short_name должна быть от 2 до 22 символов
         self.short_name = create_short_name(name=self.table, short_name_len=22, random_str_len=6)
 
-        self.uni_res = self.system.lower() + '.' + self.schema.lower() + '.' + self.table.lower()
-        self.instance = (self.system + '_' + self.schema).lower()
+        # Для разных схем формирование имени может различаться
+        uni_resource_template = Config.config.get("uni_resource_template", None)
+        if uni_resource_template is None:
+            self.uni_res = self.system.lower() + '.' + self.schema.lower() + '.' + self.table.lower()
+        else:
+            # До момента вызова этой строки все необходимые переменные должны быть определены!
+            template = Config.env.from_string(uni_resource_template)
+            self.uni_res = template.render(uni=self)
+
         self.resource_cd = self.uni_res
+
+        self.instance = (self.system + '_' + self.schema).lower()
         self.actual_dttm_name =  actual_date_name(self.src_cd)
 
         self.ceh_res = ceh_resource
@@ -161,7 +185,8 @@ class Source:
 
 class Target:
 
-    def __init__(self, schema: str, table: str, src_cd: str, object_type: str, resource_cd: str = None):
+    def __init__(self, schema: str, table: str, src_cd: str, object_type: str,
+                 uni_resource_cd: str, resource_cd: str = None):
 
         self.schema = schema
         self.table = table
@@ -169,6 +194,7 @@ class Target:
         self.src_cd = src_cd
         self.object_type = object_type
         self.resource_cd = resource_cd if resource_cd is not None else '.'.join(['ceh', self.schema, self.table])
+        self.uni_resource_cd = uni_resource_cd
 
 
 class LocalMetric:
@@ -301,7 +327,7 @@ class Mart:
     def __init__(self, short_name: str, algorithm_uid: str, algorithm_uid_2: str, target: str, source: str,
                  delta_mode: str, processed_dt: str, algo: str, source_system: str, source_schema: str, source_name: str,
                  table_name: str,
-                 src_cd: str, comment: str):
+                 src_cd: str, comment: str, uni_resource_cd: str):
 
         Mart._ignore_field_map_ctx_list = Config.setting_up_field_lists.get('ignore_field_map_ctx_list', dict())
 
@@ -325,6 +351,7 @@ class Mart:
         self.src_cd = src_cd
         self.actual_dttm_name = actual_date_name(self.src_cd)
         self.comment = comment
+        self.uni_resource_cd = uni_resource_cd
 
 
         # Список полей с описанием, которые БУДУТ добавлены в секцию field_map шаблона flow.wk.yaml
@@ -366,6 +393,7 @@ class FlowContext:
     data_capture_mode: str
     delta_mode: str
     work_flow_schema_version: str
+    # processed_dt_format: str
 
 
     def __init__(self, flow_name : str):
@@ -384,7 +412,8 @@ class FlowContext:
 
         self.processed_dt: str = Config.config.get('processed_dt', 'processed_dt_не_определено')
         self.processed_dt_conversion = Config.config.get('processed_dt_conversion', 'processed_dt_conversion_не_определено')
-        self.tgt_history_field = Config.config.get('tgt_history_field', 'tgt_history_field_не_определено')
+
+        self.tgt_history_field = Config.config.get('tgt_history_field', '')
 
         self.username = str(os.environ.get('USERNAME', 'Unknown Author')).title()
         self.author = Config.author
@@ -455,4 +484,5 @@ class FlowContext:
         target_table.multi_fields.sort()
         target_table.hash_fields.sort()
 
+        target_table.fields_sort()
         self.target_tables.append(target_table)

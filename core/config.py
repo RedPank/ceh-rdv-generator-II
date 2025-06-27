@@ -78,7 +78,7 @@ class Config:
 
         Config.colorlog = Config.config.get('colorlog', False)
 
-                # "Загрузка" файлов-шаблонов
+        # "Загрузка" файлов-шаблонов
         Config.templates_path = os.path.abspath(Config.config.get('templates', 'templates'))
         if not os.path.exists(Config.templates_path):
             msg = f'Не найден каталог с шаблонами "{Config.templates_path}"'
